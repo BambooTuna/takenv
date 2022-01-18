@@ -1,0 +1,44 @@
+# アプリの保存場所を指定
+cask_args appdir: "/Applications"
+
+## 必須ツール
+brew 'zsh'
+
+### To install useful key bindings and fuzzy completion:
+### $(brew --prefix)/opt/fzf/install
+brew 'fzf'
+
+brew 'git'
+brew 'mysql'
+
+cask "docker"
+cask "iterm2"
+
+### 言語
+brew 'go'
+
+## 便利ツール
+brew 'tree'
+cask "discord"
+cask "slack"
+cask "clipy"
+cask "toggl-track"
+
+### cat
+brew 'bat'
+
+### ls
+brew 'exa'
+
+### jq
+brew 'jq'
+
+### 負荷試験
+brew 'vegeta'
+brew 'jplot'
+brew 'jaggr'
+
+### Flutter
+### flutter create -i swift -a kotlin yourappname
+brew 'flutter'
+brew 'cocoapods'
