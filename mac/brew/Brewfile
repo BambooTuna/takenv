@@ -2,10 +2,14 @@
 cask_args appdir: "/Applications"
 
 ## 必須ツール
+### 現在のシェル: echo $SHELL
+### シェル一覧: cat /etc/shells
+### 切り替え: chsh -s /bin/zsh
 brew 'zsh'
 
 ### To install useful key bindings and fuzzy completion:
-### $(brew --prefix)/opt/fzf/install
+### 1. $(brew --prefix)/opt/fzf/install
+### 2. terminalフォルダの中身を反映させる
 brew 'fzf'
 
 brew 'git'
@@ -14,15 +18,27 @@ brew 'mysql'
 cask "docker"
 cask "iterm2"
 
-### 言語
-brew 'go'
+## 言語
+
+### Golang
+brew "go"
+
+### Python
+### pyenv install --list
+### pyenv install 3.9.5
+###
+brew "pyenv"
 
 ## 便利ツール
-brew 'tree'
-cask "discord"
+cask "intellij-idea"
+cask "google-chrome"
 cask "slack"
+cask "discord"
+cask "amazon-music"
 cask "clipy"
 cask "toggl-track"
+
+brew 'tree'
 
 ### cat
 brew 'bat'
@@ -34,9 +50,9 @@ brew 'exa'
 brew 'jq'
 
 ### 負荷試験
-brew 'vegeta'
-brew 'jplot'
-brew 'jaggr'
+# brew 'vegeta'
+# brew 'jplot'
+# brew 'jaggr'
 
 ### Flutter
 ### flutter create -i swift -a kotlin yourappname
