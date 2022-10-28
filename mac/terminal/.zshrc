@@ -62,27 +62,6 @@ PROMPT='
 # Shell
 alias rshell=exec $SHELL -l
 
-
-#Golang
-export GO111MODULE=on
-export GOPATH=$HOME/go
-export PATH=$PATH:$GOPATH/bin
-
-#GCP
-source '/usr/local/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/path.zsh.inc'
-source '/usr/local/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/completion.zsh.inc'
-
-# Java
-export PATH="/usr/local/opt/openjdk/bin:$PATH"
-
-# k8s
-source <(kubectl completion zsh)
-alias k=kubectl
-complete -o default -F __start_kubectl k
-
-# Python
-export PATH="/usr/local/opt/m4/bin:$PATH"
-
 # fzf
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 [ -f ~/.cfzf.zsh ] && source ~/.cfzf.zsh

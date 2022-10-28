@@ -29,6 +29,17 @@ brew "go"
 ###
 brew "pyenv"
 
+### node
+### echo "eval \"$(nodenv init -)\"" >> ~/.zshrc
+brew "nodenv"
+
+### terraform
+brew "tfenv"
+
+### aws
+brew "awscli"
+
+
 ## 便利ツール
 cask "intellij-idea"
 cask "google-chrome"
@@ -56,5 +67,9 @@ brew 'jq'
 
 ### Flutter
 ### flutter create -i swift -a kotlin yourappname
-brew 'flutter'
-brew 'cocoapods'
+brew "flutter"
+brew "cocoapods"
+
+cask "homebrew/cask-versions/temurin8"
+brew "android-sdk"
+cask "android-studio"
