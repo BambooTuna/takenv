@@ -13,7 +13,7 @@ elif [ "$(uname)" == "Linux" ] ; then
 
   curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim.appimage
   chmod u+x nvim.appimage
-  move ./nvim.appimage $HOME/bin/nvim
+  mv ./nvim.appimage $HOME/bin/nvim
 else
   echo "This is $(uname)"
 fi
