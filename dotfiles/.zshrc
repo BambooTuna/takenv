@@ -66,6 +66,10 @@ precmd () { vcs_info }
 # プロンプトカスタマイズ
 PROMPT='[%B%F{blue}%n@%m%f%b:%F{green}%~%f]%F{cyan}$vcs_info_msg_0_%f%F{yellow}$%f '
 
+
+alias rshell=exec $SHELL -l
+
+
 [ -f $HOME/.zshrc_`uname` ] && . $HOME/.zshrc_`uname`
 [ -f $HOME/.zshrc_local ] && . $HOME/.zshrc_local
 
