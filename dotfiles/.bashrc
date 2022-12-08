@@ -26,10 +26,6 @@ prompt_git() {
 PS1="\e[32m\u@\h:\e[34m\w]\e[36m[\$(prompt_git)]\n\e[0m\$ "
 
 
-# ビープ音を鳴らさない
-set bell-style none
-
-
 # asdf
 . $HOME/.asdf/asdf.sh
 
