@@ -1,0 +1,18 @@
+{
+  "coc.preferences.formatOnSaveFiletypes": ["*"],
+
+  "flutter.trace.server": "verbose",
+  "flutter.lsp.initialization.closingLabels": true,
+  "flutter.lsp.debug": true,
+  "flutter.provider.hot-reload": true,
+  "flutter.provider.enableSnippet": true,
+  "flutter.sdk.dart-lookup": "asdf which dart",
+  "flutter.sdk.flutter-lookup": "asdf which flutter",
+
+  "snippets.ultisnips.pythonPrompt": false,
+  "python.pythonPath": "asdf which python",
+
+  "eslint.packageManager": "yarn",
+  "eslint.nodePath": "asdf which node",
+  "eslint.autoFixOnSave": true
+}
