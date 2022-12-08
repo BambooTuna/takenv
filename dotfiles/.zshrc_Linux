@@ -1,0 +1,11 @@
+# asdf
+. $HOME/.asdf/asdf.sh
+
+# fzf
+[ -f $HOME/.fzf.zsh ] && source $HOME/.fzf.zsh
+[ -f $HOME/.cfzf.zsh ] && source $HOME/.cfzf.zsh
+
+# view
+source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+
+
