@@ -1,7 +1,11 @@
 # Set initial preference.
 init:
-	.bin/init.sh
+	bash .bin/init.sh
 
 # Link dotfiles.
 link:
-	.bin/link.sh
+	bash .bin/link.sh
+
+# setup.
+setup:
+	bash .bin/setup.sh
