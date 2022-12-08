@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source ~/.bashrc
+source $HOME/.bashrc
 
 asdf plugin add $1
 asdf install $1 $2

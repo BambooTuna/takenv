@@ -1,6 +1,6 @@
 #!/bin/zsh
 
-source ~/.zshrc
+source $HOME/.zshrc
 
 asdf plugin add $1
 asdf install $1 $2
