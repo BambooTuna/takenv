@@ -102,7 +102,7 @@ set title
 " 行番号の表示
 set number
 " ヤンクでクリップボードにコピー
-set clipboard=unnamed,unnamedplus
+set clipboard=unnamed
 " Escの2回押しでハイライト消去
 nnoremap <Esc><Esc> :nohlsearch<CR><ESC>
 " シンタックスハイライト
