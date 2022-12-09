@@ -1,8 +1,8 @@
 source $HOME/.rc
 
 
-export PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
-shopt -u histappend
+# export PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
+# shopt -u histappend
 
 
 # git
