@@ -6,8 +6,8 @@ if [ "$(uname)" == "Darwin" ] ; then
   zsh "$(dirname $0)/setup-asdf-plugin.zsh" neovim latest
 elif [ "$(uname)" == "Linux" ] ; then
   # install asdf
-  apt-get update -y
-  apt-get install -y zsh git curl
+  sudo apt-get update -y || apt-get update -y
+  sudo apt-get install -y zsh git curl || apt-get install -y zsh git curl
   git clone https://github.com/asdf-vm/asdf.git $HOME/.asdf --branch v0.10.2 || echo ".asdf already installed"
   bash "$(dirname $0)/setup-asdf-plugin.bash" nodejs latest
 
