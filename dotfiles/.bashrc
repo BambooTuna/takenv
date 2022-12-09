@@ -1,6 +1,5 @@
 source $HOME/.rc
 
-[ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
 export PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
 shopt -u histappend
@@ -26,6 +25,15 @@ prompt_git() {
 PS1="\e[32m\u@\h:\e[34m\w]\e[36m[\$(prompt_git)]\n\e[0m\$ "
 
 
-# asdf
+# alias
+
+
+# path
+## asdf
 . $HOME/.asdf/asdf.sh
 
+
+## fzf
+export PATH="$PATH:$HOME/.vim/plugged/fzf/bin"
+[ -f $HOME/.fzf/shell/completion.bash ] && source $HOME/.fzf/shell/completion.bash
+[ -f $HOME/.fzf/shell/key-bindings.bash ] && source $HOME/.fzf/shell/key-bindings.bash

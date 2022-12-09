@@ -243,8 +243,9 @@ Plug 'terryma/vim-expand-region'
 Plug 'vim-airline/vim-airline'
 Plug 'vim-airline/vim-airline-themes'
 
-" Plug 'junegunn/fzf', {'dir': '~/.fzf_bin', 'do': './install --all'}
 Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+" Plug 'junegunn/fzf.vim'
+
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
 
 Plug 'lambdalisue/fern.vim'

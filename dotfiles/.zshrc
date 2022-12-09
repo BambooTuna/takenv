@@ -66,8 +66,16 @@ precmd () { vcs_info }
 # プロンプトカスタマイズ
 PROMPT='[%B%F{blue}%n@%m%f%b:%F{green}%~%f]%F{cyan}$vcs_info_msg_0_%f%F{yellow}$%f '
 
-
+# alias
 alias rshell=exec $SHELL -l
+
+# path
+
+## fzf
+export PATH="$PATH:$HOME/.vim/plugged/fzf/bin"
+[ -f $HOME/.vim/plugged/fzf/shell/completion.zsh ] && source $HOME/.vim/plugged/fzf/shell/completion.zsh
+[ -f $HOME/.vim/plugged/fzf/shell/key-bindings.zsh ] && source $HOME/.vim/plugged/fzf/shell/key-bindings.zsh
+
 
 
 [ -f $HOME/.zshrc_`uname` ] && . $HOME/.zshrc_`uname`
