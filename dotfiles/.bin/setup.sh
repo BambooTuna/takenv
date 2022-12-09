@@ -8,7 +8,7 @@ elif [ "$(uname)" == "Linux" ] ; then
   # install asdf
   apt-get update -y
   apt-get install -y zsh git curl
-  git clone https://github.com/asdf-vm/asdf.git $HOME/.asdf --branch v0.10.2
+  git clone https://github.com/asdf-vm/asdf.git $HOME/.asdf --branch v0.10.2 || echo ".asdf already installed"
   bash "$(dirname $0)/setup-asdf-plugin.bash" nodejs latest
 
   curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim.appimage
