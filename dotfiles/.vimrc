@@ -164,7 +164,17 @@ endif
 "----------------------------------------
 let mapleader = "\<Space>"
 
-:imap jj <Esc>
+inoremap <silent> jj <ESC>
+
+" insert mode edit
+inoremap <C-h> <Left>
+inoremap <C-j> <Down>
+inoremap <C-k> <Up>
+inoremap <C-l> <Right>
+inoremap <C-d> <BackSpace>
+inoremap <silent> <C-b> <C-\><C-O>b
+inoremap <silent> <C-w> <C-\><C-O>w
+inoremap <silent> <C-e> <C-\><C-O>e
 
 
 " tab
@@ -319,11 +329,8 @@ function! s:check_back_space() abort
 endfunction
 
 " autocomplete
-inoremap <silent><expr> <C-j> coc#pum#visible() ? coc#pum#next(1) : "\<C-j>"
-inoremap <silent><expr> <C-k> coc#pum#visible() ? coc#pum#prev(1) : "\<C-k>"
 inoremap <silent><expr> <Enter> coc#pum#visible() ? coc#pum#confirm() : "\<Enter>"
 inoremap <silent><expr> <Esc> coc#pum#visible() ? coc#pum#cancel() : "\<Esc>"
-inoremap <silent><expr> <C-h> coc#pum#visible() ? coc#pum#cancel() : "\<C-h>"
 
 " <Tab>で次、<S+Tab>で前
 inoremap <silent><expr> <TAB>
