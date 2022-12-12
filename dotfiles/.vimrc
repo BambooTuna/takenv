@@ -421,13 +421,13 @@ nnoremap <silent> <Leader>E :<C-u>Fern . -drawer -reveal=%<CR>
 let g:fern#disable_default_mappings = 1
 
 function! FernInit() abort
-  nmap <buffer> v <Plug>(fern-action-open:side)
-  nmap <buffer> M <Plug>(fern-action-new-dir)
+  nmap <buffer> E <Plug>(fern-action-open:side)
+  nmap <buffer> K <Plug>(fern-action-new-dir)
   nmap <buffer> ! <Plug>(fern-action-hidden:toggle)
   nmap <buffer> - <Plug>(fern-action-mark:toggle)
   vmap <buffer> - <Plug>(fern-action-mark:toggle)
   nmap <buffer> C <Plug>(fern-action-clipboard-copy)
-  nmap <buffer> X <Plug>(fern-action-clipboard-move)
+  nmap <buffer> R <Plug>(fern-action-clipboard-move)
   nmap <buffer> P <Plug>(fern-action-clipboard-paste)
   nmap <buffer> h <Plug>(fern-action-collapse)
   nmap <buffer> c <Plug>(fern-action-copy)
