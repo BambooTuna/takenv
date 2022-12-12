@@ -175,6 +175,7 @@ inoremap <C-d> <BackSpace>
 inoremap <silent> <C-b> <C-\><C-O>b
 inoremap <silent> <C-w> <C-\><C-O>w
 inoremap <silent> <C-e> <C-\><C-O>e
+inoremap <silent> <C-p> <C-\><C-O>p
 
 
 " tab
