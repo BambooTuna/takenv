@@ -1,3 +1,5 @@
+install: init link setup
+
 # Set initial preference.
 init:
 	bash .bin/init.sh

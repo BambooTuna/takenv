@@ -215,6 +215,11 @@ noremap <Down> <Nop>
 noremap <Up> <Nop>
 noremap <Right> <Nop>
 
+inoremap <Left> <Nop>
+inoremap <Down> <Nop>
+inoremap <Up> <Nop>
+inoremap <Right> <Nop>
+
 "----------------------------------------
 " カスタムキーマッピング
 "----------------------------------------
