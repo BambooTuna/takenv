@@ -18,32 +18,6 @@ setopt share_history
 setopt extended_history
 alias history='history -t "%F %T"'
 
-
-# 補完機能を有効にする
-autoload -Uz compinit
-compinit -u
-
-# 補完候補を詰めて表示
-setopt list_packed
-
-# 補完候補一覧をカラー表示
-autoload colors
-zstyle ':completion:*' list-colors ''
-
-# 補完で小文字でも大文字にマッチさせる
-zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
-
-# ../ の後は今いるディレクトリを補完しない
-zstyle ':completion:*' ignore-parents parent pwd ..
-
-# sudo の後ろでコマンド名を補完する
-zstyle ':completion:*:sudo:*' command-path /usr/local/sbin /usr/local/bin \
-                   /usr/sbin /usr/bin /sbin /bin /usr/X11R6/bin
-
-# ps コマンドのプロセス名補完
-zstyle ':completion:*:processes' command 'ps x -o pid,s,args'
-
-
 # コマンドのスペルを訂正
 setopt correct
 # ビープ音を鳴らさない
@@ -66,6 +40,32 @@ precmd () { vcs_info }
 # プロンプトカスタマイズ
 PROMPT='[%B%F{blue}%n@%m%f%b:%F{green}%~%f]%F{cyan}$vcs_info_msg_0_%f%F{yellow}$%f '
 
+# 補完機能を有効にする
+autoload -Uz compinit
+compinit -u
+
+# 補完候補を詰めて表示
+setopt list_packed
+
+# 補完候補一覧をカラー表示
+autoload colors
+zstyle ':completion:*' list-colors ''
+# 補完で小文字でも大文字にマッチさせる
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
+# ../ の後は今いるディレクトリを補完しない
+zstyle ':completion:*' ignore-parents parent pwd ..
+
+# sudo の後ろでコマンド名を補完する
+zstyle ':completion:*:sudo:*' command-path /usr/local/sbin /usr/local/bin \
+                   /usr/sbin /usr/bin /sbin /bin /usr/X11R6/bin
+
+# ps コマンドのプロセス名補完
+zstyle ':completion:*:processes' command 'ps x -o pid,s,args'
+
+# kubectl 補完
+source <(kubectl completion zsh)  # 現在のzshシェルにコマンド補完を設定します
+echo "[[ $commands[kubectl] ]] && source <(kubectl completion zsh)" >> ~/.zshrc # zshシェルでのコマンド補完を永続化するために.zshrcに追記します。
+
 # alias
 alias rshell=exec $SHELL -l
 
@@ -82,3 +82,7 @@ export PATH="$PATH:$HOME/.vim/plugged/fzf/bin"
 [ -f $HOME/.zshrc_local ] && . $HOME/.zshrc_local
 
 
+[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
+[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
+[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
+[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)

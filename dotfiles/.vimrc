@@ -444,6 +444,7 @@ function! FernInit() abort
   nmap <buffer> s <Plug>(fern-action-open:select)
   nmap <buffer> t <Plug>(fern-action-open:tabedit)
   nmap <buffer> <C-l> <Plug>(fern-action-reload)
+  nmap <buffer> <BS> <Plug>(fern-action-leave)
   nmap <buffer> r <Plug>(fern-action-rename)
   nmap <buffer> i <Plug>(fern-action-reveal)
   nmap <buffer> D <Plug>(fern-action-trash)

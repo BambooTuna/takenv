@@ -24,6 +24,9 @@ prompt_git() {
 
 PS1="\e[32m\u@\h:\e[34m\w]\e[36m[\$(prompt_git)]\n\e[0m\$ "
 
+# kubectl 補完
+source <(kubectl completion bash) # 現在のbashシェルにコマンド補完を設定するには、最初にbash-completionパッケージをインストールする必要があります。
+echo "source <(kubectl completion bash)" >> ~/.bashrc # bashシェルでのコマンド補完を永続化するために.bashrcに追記します。
 
 # alias
 
@@ -37,3 +40,7 @@ PS1="\e[32m\u@\h:\e[34m\w]\e[36m[\$(prompt_git)]\n\e[0m\$ "
 export PATH="$PATH:$HOME/.vim/plugged/fzf/bin"
 [ -f $HOME/.fzf/shell/completion.bash ] && source $HOME/.fzf/shell/completion.bash
 [ -f $HOME/.fzf/shell/key-bindings.bash ] && source $HOME/.fzf/shell/key-bindings.bash
+source <(kubectl completion bash)
+source <(kubectl completion bash)
+source <(kubectl completion bash)
+source <(kubectl completion bash)
