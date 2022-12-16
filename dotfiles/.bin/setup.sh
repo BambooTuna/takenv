@@ -8,6 +8,8 @@ elif [ "$(uname)" == "Linux" ] ; then
   # install asdf
   sudo apt-get update -y || apt-get update -y
   sudo apt-get install -y zsh git curl || apt-get install -y zsh git curl
+  sudo chsh -s /bin/zsh "$USER" || chsh -s /bin/zsh "$USER"
+
   git clone https://github.com/asdf-vm/asdf.git $HOME/.asdf --branch v0.10.2 || echo ".asdf already installed"
   bash "$(dirname $0)/setup-asdf-plugin.bash" nodejs latest
 
