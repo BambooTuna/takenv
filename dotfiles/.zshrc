@@ -46,6 +46,7 @@ compinit -u
 
 # 補完候補を詰めて表示
 setopt list_packed
+setopt nomatch
 
 # 補完候補一覧をカラー表示
 autoload colors
@@ -81,26 +82,3 @@ export PATH="$PATH:$HOME/.vim/plugged/fzf/bin"
 [ -f $HOME/.zshrc_`uname` ] && . $HOME/.zshrc_`uname`
 [ -f $HOME/.zshrc_local ] && . $HOME/.zshrc_local
 
-
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
