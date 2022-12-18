@@ -69,5 +69,15 @@
 
   "eslint.packageManager": "yarn",
   "eslint.nodePath": "asdf which node",
-  "eslint.autoFixOnSave": true
+  "eslint.autoFixOnSave": true,
+
+  "languageserver": {
+    "terraform": {
+      "command": "terraform-ls",
+      "args": ["serve"],
+      "filetypes": ["terraform", "tf"],
+      "initializationOptions": {},
+      "settings": {}
+    }
+  }
 }
