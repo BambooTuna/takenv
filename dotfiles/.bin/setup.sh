@@ -19,10 +19,14 @@ elif [ "$(uname)" == "Linux" ] ; then
   [ -e $HOME/bin/nvim ] && rm -rf $HOME/bin/nvim
   mv ./nvim.appimage $HOME/bin/nvim
 
-  bash "$(dirname $0)/setup-asdf-plugin.bash" golang latest
   wget https://github.com/juliosueiras/terraform-lsp/releases/download/v0.0.12/terraform-lsp_0.0.12_linux_amd64.tar.gz
   tar -xvf terraform-lsp_0.0.12_linux_amd64.tar.gz && rm -rf terraform-lsp_0.0.12_linux_amd64.tar.gz
   mv ./terraform-lsp $HOME/bin/terraform-lsp
+
+  export PROVIDER={all,google,aws,kubernetes}
+  curl -LO https://github.com/GoogleCloudPlatform/terraformer/releases/download/$(curl -s https://api.github.com/repos/GoogleCloudPlatform/terraformer/releases/latest | grep tag_name | cut -d '"' -f 4)/terraformer-${PROVIDER}-linux-amd64
+  chmod +x terraformer-${PROVIDER}-linux-amd64
+  mv terraformer-${PROVIDER}-linux-amd64 $HOME/bin/terraformer
 else
   echo "This is $(uname)"
 fi
