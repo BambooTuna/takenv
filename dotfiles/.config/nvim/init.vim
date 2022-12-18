@@ -17,6 +17,7 @@ lua <<EOF
      "javascript",
      "typescript",
      "tsx",
+     "terraform",
    },
    sync_install = false,
    auto_install = true,
