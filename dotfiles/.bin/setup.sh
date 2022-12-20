@@ -27,6 +27,8 @@ elif [ "$(uname)" == "Linux" ] ; then
   curl -LO https://github.com/GoogleCloudPlatform/terraformer/releases/download/$(curl -s https://api.github.com/repos/GoogleCloudPlatform/terraformer/releases/latest | grep tag_name | cut -d '"' -f 4)/terraformer-${PROVIDER}-linux-amd64
   chmod +x terraformer-${PROVIDER}-linux-amd64
   mv terraformer-${PROVIDER}-linux-amd64 $HOME/bin/terraformer
+
+  bash "$(dirname $0)/setup-asdf-plugin.bash" kubectl latest
 else
   echo "This is $(uname)"
 fi
