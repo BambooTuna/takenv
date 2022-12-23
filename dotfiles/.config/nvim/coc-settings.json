@@ -11,41 +11,28 @@
 
   "snippets.ultisnips.pythonPrompt": false,
   "python.pythonPath": "asdf which python",
+  "jedi": {
+    "enable": true,
+    "startupMessage": false,
+    "executable.command": "jedi-language-server"
+  },
   "diagnostic-languageserver.filetypes": {
-    "python": "pylint"
+    "python": ["flake8"]
   },
   "diagnostic-languageserver.formatFiletypes": {
-    "python": ["black", "isort", "docformatter"]
-  },
-  "diagnostic-languageserver.formatters": {
-    "black": {
-      "command": "black",
-      "args": ["-q", "-"]
-    },
-    "isort": {
-      "command": "isort",
-      "args": ["-q", "-"]
-    },
-    "docformatter": {
-      "command": "docformatter",
-      "args": ["-"]
-    }
+    "python": ["black"]
   },
   "diagnostic-languageserver.linters": {
-    "pylint": {
-      "sourceName": "pylint",
-      "command": "pylint",
-      "args": [
-        "--output-format",
-        "text",
-        "--score",
-        "no",
-        "--msg-template",
-        "'{line}:{column}:{category}:{msg} ({msg_id}:{symbol})'",
-        "%file"
-      ],
+    "flake8": {
+      "command": "flake8",
+      "debounce": 100,
+      "args": ["--format=%(row)d,%(col)d,%(code).1s,%(code)s: %(text)s", "-"],
+      "offsetLine": 0,
+      "offsetColumn": 0,
+      "sourceName": "flake8",
+      "formatLines": 1,
       "formatPattern": [
-        "^(\\d+?):(\\d+?):([a-z]+?):(.*)$",
+        "(\\d+),(\\d+),([A-Z]),(.*)(\\r|\\n)*$",
         {
           "line": 1,
           "column": 2,
@@ -53,23 +40,27 @@
           "message": 4
         }
       ],
-      "rootPatterns": [".git", "pyproject.toml", "setup.py"],
       "securities": {
-        "informational": "hint",
-        "refactor": "info",
-        "convention": "info",
-        "warning": "warning",
-        "error": "error",
-        "fatal": "error"
-      },
-      "offsetColumn": 1,
-      "formatLines": 1
+        "W": "warning",
+        "E": "error",
+        "F": "error",
+        "C": "error",
+        "N": "error"
+      }
+    }
+  },
+  "diagnostic-languageserver.formatters": {
+    "black": {
+      "command": "black",
+      "args": ["--quiet", "-"]
     }
   },
 
   "eslint.packageManager": "yarn",
   "eslint.nodePath": "asdf which node",
   "eslint.autoFixOnSave": true,
+
+  "go.goplsPath": "~/go/bin/gopls",
 
   "languageserver": {
     "terraform": {

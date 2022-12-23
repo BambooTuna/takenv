@@ -78,21 +78,27 @@ export PATH="$PATH:$HOME/.vim/plugged/fzf/bin"
 [ -f $HOME/.vim/plugged/fzf/shell/key-bindings.zsh ] && source $HOME/.vim/plugged/fzf/shell/key-bindings.zsh
 
 
-
 [ -f $HOME/.zshrc_`uname` ] && . $HOME/.zshrc_`uname`
 [ -f $HOME/.zshrc_local ] && . $HOME/.zshrc_local
 
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
+[[ /usr/bin/kubectl ]] && source <(kubectl completion zsh)
+[[ /usr/bin/kubectl ]] && source <(kubectl completion zsh)
+[[ /usr/bin/kubectl ]] && source <(kubectl completion zsh)
+[[ /usr/bin/kubectl ]] && source <(kubectl completion zsh)
+[[ /usr/bin/kubectl ]] && source <(kubectl completion zsh)
+[[ /usr/bin/kubectl ]] && source <(kubectl completion zsh)
+[[ /usr/bin/kubectl ]] && source <(kubectl completion zsh)
+[[ /usr/bin/kubectl ]] && source <(kubectl completion zsh)
+[[ /usr/bin/kubectl ]] && source <(kubectl completion zsh)
+[[ /usr/bin/kubectl ]] && source <(kubectl completion zsh)
+[[ /home/suzukitakeo/.asdf/shims/kubectl ]] && source <(kubectl completion zsh)
+[[ /home/suzukitakeo/.asdf/shims/kubectl ]] && source <(kubectl completion zsh)
+[[ /home/suzukitakeo/.asdf/shims/kubectl ]] && source <(kubectl completion zsh)
+[[ /usr/bin/kubectl ]] && source <(kubectl completion zsh)
+[[ /usr/bin/kubectl ]] && source <(kubectl completion zsh)
+[[ /usr/bin/kubectl ]] && source <(kubectl completion zsh)
+[[ /usr/bin/kubectl ]] && source <(kubectl completion zsh)
+[[ /usr/bin/kubectl ]] && source <(kubectl completion zsh)
+[[ /usr/bin/kubectl ]] && source <(kubectl completion zsh)
+[[ /usr/bin/kubectl ]] && source <(kubectl completion zsh)
+[[ /usr/bin/kubectl ]] && source <(kubectl completion zsh)
