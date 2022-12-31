@@ -10,9 +10,9 @@ elif [ "$(uname)" == "Linux" ] ; then
   # install asdf
   sudo apt-get update -y || apt-get update -y
   sudo apt-get install -y \
-    zsh git curl wget google-cloud-sdk-gke-gcloud-auth-plugin || \
+    zsh git curl wget peco google-cloud-sdk-gke-gcloud-auth-plugin || \
     apt-get install -y \
-    zsh git curl wget google-cloud-sdk-gke-gcloud-auth-plugin
+    zsh git curl wget peco google-cloud-sdk-gke-gcloud-auth-plugin
   sudo chsh -s /bin/zsh "$USER" || chsh -s /bin/zsh "$USER"
 
   # install asdf
