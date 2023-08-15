@@ -29,6 +29,12 @@ elif [ "$(uname)" == "Linux" ] ; then
   rm -rf ~/.config/nvim
   git clone --depth 1 https://github.com/AstroNvim/AstroNvim ~/.config/nvim
   git clone https://github.com/BambooTuna/astronvim_config.git ~/.config/nvim/lua/user
+  echo "[-] Download fonts [-]"
+  echo "https://github.com/ryanoasis/nerd-fonts/releases/download/v2.1.0/DroidSansMono.zip"
+  wget https://github.com/ryanoasis/nerd-fonts/releases/download/v2.1.0/DroidSansMono.zip
+  unzip DroidSansMono.zip -d ~/.fonts && rm DroidSansMono.zip
+  fc-cache -fv
+  echo "Download fonts done!"
 
   # install python
   apt-get install -y \
