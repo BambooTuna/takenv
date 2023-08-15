@@ -7,13 +7,11 @@ if [ "$(uname)" == "Darwin" ] ; then
   zsh "$(dirname $0)/setup-asdf-plugin.zsh" golang latest
   # go install golang.org/x/tools/gopls@latest
 elif [ "$(uname)" == "Linux" ] ; then
-  # install asdf
-  sudo apt-get update -y || apt-get update -y
-  sudo apt-get install -y \
-    zsh git curl wget peco google-cloud-sdk-gke-gcloud-auth-plugin || \
-    apt-get install -y \
+  # pre install
+  apt-get update -y
+  apt-get install -y \
     zsh git curl wget peco google-cloud-sdk-gke-gcloud-auth-plugin
-  sudo chsh -s /bin/zsh "$USER" || chsh -s /bin/zsh "$USER"
+  chsh -s /bin/zsh "$USER"
 
   # install asdf
   git clone https://github.com/asdf-vm/asdf.git $HOME/.asdf --branch v0.10.2 || echo ".asdf already installed"
@@ -25,31 +23,30 @@ elif [ "$(uname)" == "Linux" ] ; then
   [ -e $HOME/bin/nvim ] && rm -rf $HOME/bin/nvim
   mv ./nvim.appimage $HOME/bin/nvim
 
+  # install astronvim config
+  git clone https://github.com/BambooTuna/astronvim_config.git ~/.config/nvim/lua/user
+
   # install python
-  sudo apt-get install -y \
-    build-essential libssl-dev zlib1g-dev \
-    libbz2-dev libreadline-dev libsqlite3-dev curl llvm \
-    libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev libsasl2-dev python3-dev libldap2-dev || \
   apt-get install -y \
     build-essential libssl-dev zlib1g-dev \
     libbz2-dev libreadline-dev libsqlite3-dev curl llvm \
     libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev libsasl2-dev python3-dev libldap2-dev
-  bash "$(dirname $0)/setup-asdf-plugin.bash" python latest
-  python3 -m pip install jedi-language-server flake8 black
-
+  # bash "$(dirname $0)/setup-asdf-plugin.bash" python latest
+  # python3 -m pip install jedi-language-server flake8 black
 
   # install terraform
-  wget https://github.com/juliosueiras/terraform-lsp/releases/download/v0.0.12/terraform-lsp_0.0.12_linux_amd64.tar.gz
-  tar -xvf terraform-lsp_0.0.12_linux_amd64.tar.gz && rm -rf terraform-lsp_0.0.12_linux_amd64.tar.gz
-  mv ./terraform-lsp $HOME/bin/terraform-lsp
+  # wget https://github.com/juliosueiras/terraform-lsp/releases/download/v0.0.12/terraform-lsp_0.0.12_linux_amd64.tar.gz
+  # tar -xvf terraform-lsp_0.0.12_linux_amd64.tar.gz && rm -rf terraform-lsp_0.0.12_linux_amd64.tar.gz
+  # mv ./terraform-lsp $HOME/bin/terraform-lsp
 
-  export PROVIDER={all,google,aws,kubernetes}
-  curl -LO https://github.com/GoogleCloudPlatform/terraformer/releases/download/$(curl -s https://api.github.com/repos/GoogleCloudPlatform/terraformer/releases/latest | grep tag_name | cut -d '"' -f 4)/terraformer-${PROVIDER}-linux-amd64
-  chmod +x terraformer-${PROVIDER}-linux-amd64
-  mv terraformer-${PROVIDER}-linux-amd64 $HOME/bin/terraformer
+  # install terraformer
+  # export PROVIDER={all,google,aws,kubernetes}
+  # curl -LO https://github.com/GoogleCloudPlatform/terraformer/releases/download/$(curl -s https://api.github.com/repos/GoogleCloudPlatform/terraformer/releases/latest | grep tag_name | cut -d '"' -f 4)/terraformer-${PROVIDER}-linux-amd64
+  # chmod +x terraformer-${PROVIDER}-linux-amd64
+  # mv terraformer-${PROVIDER}-linux-amd64 $HOME/bin/terraformer
 
   # install kubectl
-  bash "$(dirname $0)/setup-asdf-plugin.bash" kubectl latest
+  # bash "$(dirname $0)/setup-asdf-plugin.bash" kubectl latest
 else
   echo "This is $(uname)"
 fi
