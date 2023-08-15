@@ -8,10 +8,12 @@ if [ "$(uname)" == "Darwin" ] ; then
   # go install golang.org/x/tools/gopls@latest
 elif [ "$(uname)" == "Linux" ] ; then
   # pre install
-  apt-get update -y
+  apt-get update -y || sudo apt-get update -y
   apt-get install -y \
-    zsh git curl wget peco google-cloud-sdk-gke-gcloud-auth-plugin
-  chsh -s /bin/zsh "$USER"
+    zsh git curl wget peco || \
+  sudo apt-get install -y \
+    zsh git curl wget peco
+  chsh -s /bin/zsh "$USER" || sudo chsh -s /bin/zsh "$USER"
 
   # install asdf
   git clone https://github.com/asdf-vm/asdf.git $HOME/.asdf --branch v0.10.2 || echo ".asdf already installed"
