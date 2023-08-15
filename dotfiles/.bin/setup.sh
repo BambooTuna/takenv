@@ -23,7 +23,9 @@ elif [ "$(uname)" == "Linux" ] ; then
   [ -e $HOME/bin/nvim ] && rm -rf $HOME/bin/nvim
   mv ./nvim.appimage $HOME/bin/nvim
 
-  # install astronvim config
+  # install astronvim and config
+  rm -rf ~/.config/nvim
+  git clone --depth 1 https://github.com/AstroNvim/AstroNvim ~/.config/nvim
   git clone https://github.com/BambooTuna/astronvim_config.git ~/.config/nvim/lua/user
 
   # install python
