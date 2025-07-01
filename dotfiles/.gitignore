@@ -31,5 +31,8 @@
 !/.config/
 !/.config/**
 
+!/.ai/
+!/.ai/**
+
 !/.claude/
 !/.claude/**

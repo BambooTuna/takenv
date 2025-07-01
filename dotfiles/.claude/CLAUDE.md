@@ -4,3 +4,7 @@
 
 ## 通知
 必須: タスクの完了時またはユーザーへのメッセージ返信時に、`terminal-notifier -title "Cloud Code" -subtitle "DiQt Web" -message "Hi👋" -sound Pop` コマンドを一度だけ実行すること
+
+
+## コーディング時の追加指示
+- node関連のコーディングをする場合: @~/.ai/docs/node.md
