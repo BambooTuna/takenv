@@ -107,3 +107,4 @@ export PATH="$PATH:$HOME/.vim/plugged/fzf/bin"
 [ -f $HOME/.zshrc_`uname` ] && . $HOME/.zshrc_`uname`
 [ -f $HOME/.zshrc_local ] && . $HOME/.zshrc_local
 
+export GOOGLE_CLOUD_PROJECT="bak-pj"

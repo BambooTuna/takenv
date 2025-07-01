@@ -29,6 +29,8 @@ elif [ "$(uname)" == "Linux" ] ; then
   rm -rf ~/.config/nvim
   git clone --depth 1 https://github.com/AstroNvim/AstroNvim ~/.config/nvim
   git clone https://github.com/BambooTuna/astronvim_config.git ~/.config/nvim/lua/user
+  # ファイル内検索のため 
+  bash "$(dirname $0)/setup-asdf-plugin.bash" ripgrep latest
   echo "[-] Download fonts [-]"
   echo "https://github.com/ryanoasis/nerd-fonts/releases/download/v2.1.0/DroidSansMono.zip"
   wget https://github.com/ryanoasis/nerd-fonts/releases/download/v2.1.0/DroidSansMono.zip

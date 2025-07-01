@@ -4,7 +4,7 @@ sudo apt-get update -y
 sudo apt-get install -y zsh vim
 
 # install asdf
-git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.10.2
+git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.18.0
 
 .zshrc ~/.zshrc
 
