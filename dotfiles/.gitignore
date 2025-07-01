@@ -28,7 +28,8 @@
 
 !/.vimrc
 
-!/.config
-!/.config/nvim
-!/.config/nvim/coc-settings.json
-!/.config/nvim/init.vim
+!/.config/
+!/.config/**
+
+!/.claude/
+!/.claude/**

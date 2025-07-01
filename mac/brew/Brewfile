@@ -18,37 +18,14 @@ brew 'mysql'
 cask "docker"
 cask "iterm2"
 
-## 言語
-
-### Golang
-brew "go"
-
-### Python
-### pyenv install --list
-### pyenv install 3.9.5
-###
-brew "pyenv"
-
-### node
-### echo "eval \"$(nodenv init -)\"" >> ~/.zshrc
-brew "nodenv"
-
-### terraform
-brew "tfenv"
-
-### aws
-brew "awscli"
-
 
 ## 便利ツール
-cask "intellij-idea"
 cask "google-chrome"
 cask "slack"
 cask "discord"
 cask "amazon-music"
 cask "clipy"
 cask "toggl-track"
-
 brew 'tree'
 
 ### cat
@@ -59,17 +36,3 @@ brew 'exa'
 
 ### jq
 brew 'jq'
-
-### 負荷試験
-# brew 'vegeta'
-# brew 'jplot'
-# brew 'jaggr'
-
-### Flutter
-### flutter create -i swift -a kotlin yourappname
-brew "flutter"
-brew "cocoapods"
-
-cask "homebrew/cask-versions/temurin8"
-brew "android-sdk"
-cask "android-studio"

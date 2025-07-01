@@ -1,7 +1,0 @@
-# asdf
-. /opt/homebrew/opt/asdf/libexec/asdf.sH
-
-# view
-source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-
-
