@@ -1,14 +1,13 @@
-# takenv - 個人環境構築リポジトリ
+# takenv - 個人開発環境構築リポジトリ
 
-開発環境の構築を自動化するためのリポジトリです。
+シンプルで実用的な開発環境の自動構築リポジトリです。
 
 ## 📋 前提条件
 
 - Git
-- zsh
-- curl または wget
+- zsh (macOS標準、Linux: 要インストール)
 
-## 🚀 セットアップ手順
+## 🚀 クイックスタート
 
 ### 1. リポジトリのクローン
 
@@ -17,152 +16,124 @@ git clone https://github.com/BambooTuna/takenv.git
 cd takenv
 ```
 
-### 2. asdf（パッケージマネージャー）のセットアップ
+### 2. 基本環境のセットアップ
 
 ```bash
 # asdfのインストール
 git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.18.0
 
-# .zshrcに追加（手動で実行）
-echo '. "$HOME/.asdf/asdf.sh"' >> ~/.zshrc
-echo '. "$HOME/.asdf/completions/asdf.bash"' >> ~/.zshrc
+# 手動で実行
+mkdir -p "${ASDF_DATA_DIR:-$HOME/.asdf}/completions"
+asdf completion zsh > "${ASDF_DATA_DIR:-$HOME/.asdf}/completions/_asdf"
+
+# oh-my-zshとプラグインのインストール
+git clone https://github.com/ohmyzsh/ohmyzsh.git ~/.oh-my-zsh
+git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ~/.oh-my-zsh/plugins/zsh-syntax-highlighting
+git clone https://github.com/zsh-users/zsh-autosuggestions.git ~/.oh-my-zsh/plugins/zsh-autosuggestions
 
 # シェルの再読み込み
 source ~/.zshrc
 ```
 
-### 3. 各設定のセットアップ
-
-#### 3.1 vim環境（LazyVim）
+### 3. dotfilesの一括セットアップ
 
 ```bash
-# 既存のnvim設定をバックアップ（必要に応じて）
-mv ~/.config/nvim ~/.config/nvim.bak
-
-# 設定ファイルをシンボリックリンクで配置
-ln -sf $(pwd)/dotfiles/.config/nvim ~/.config/nvim
+make setup
 ```
 
-#### 3.2 zsh設定
+このコマンドで以下のシンボリックリンクが作成されます：
+- `~/.zshrc` → `dotfiles/.zshrc`
+- `~/.rc` → `dotfiles/.rc`
+- `~/.config/nvim` → `dotfiles/.config/nvim`
+- `~/.claude` → `dotfiles/.claude`
+- `~/.ai` → `dotfiles/.ai`
+
+### 4. プラットフォーム別設定（Mac）
 
 ```bash
-# 既存の.zshrcをバックアップ
-mv ~/.zshrc ~/.zshrc.bak
-
-# 設定ファイルをシンボリックリンクで配置
-ln -sf $(pwd)/dotfiles/.zshrc ~/.zshrc
-
-# シェルの再読み込み
-source ~/.zshrc
-```
-
-#### 3.3 プラットフォーム別セットアップ
-
-**Mac:**
-```bash
-# Homebrewでパッケージをインストール
+# Homebrewパッケージの一括インストール
 brew bundle --file=mac/brew/Brewfile
-```
-
-**Linux:**
-```bash
-# 基本パッケージのインストール
-sudo bash linux/setup.sh
-```
-
-### 4. asdfで開発ツールをインストール
-
-```bash
-# 必要なプラグインとツールをインストール
-./scripts/setup-tools.sh
 ```
 
 ## 🛠 含まれる設定
 
-### vim/neovim設定
-- **LazyVim**ベースの設定
-- Claude Code連携
-- Copilot統合
+### Neovim設定 (LazyVim ベース)
+- Claude Code統合プラグイン
+- GitHub Copilot
 - Markdown preview
-- 各種プラグイン
+- LazyGit統合
+- 各種言語サポート
 
 ### zsh設定
-- 履歴管理の最適化
-- Git情報表示
-- kubectl補完
-- GKE接続簡易化
-- fzf統合
-
-### 開発ツール（asdf管理）
-- Node.js
-- Python
-- Go
-- Terraform
-- その他必要に応じて
+- oh-my-zsh + af-magic テーマ
+- 高機能ヒストリ管理（50,000件、重複削除、時間記録）
+- 便利なalias設定（`v`=nvim, `k`=kubectl, `t`=terraform）
+- asdf、git、vi-mode プラグイン
+- zsh-syntax-highlighting、zsh-autosuggestions
 
 ### AI ツール設定
-- Claude Code
-- Gemini CLI
+- **Claude Code**: 日本語設定、通知機能、Node.js関連指示
+- **AI docs**: 開発言語別の詳細設定
+
+### Git設定補助
+- SSH鍵設定手順
+- Git template設定
 
 ## 📁 ディレクトリ構造
 
 ```
 takenv/
 ├── README.md                 # このファイル
-├── config/                   # AI ツール設定
-│   ├── claude-code/         # Claude Code設定
-│   └── gemini-cli/          # Gemini CLI設定
-├── dotfiles/                # 共通設定ファイル
-│   ├── .config/
-│   │   └── nvim/           # Neovim設定
-│   ├── .zshrc              # zsh設定
-│   └── Makefile            # dotfiles管理用
-├── mac/                     # Mac固有設定
-│   └── brew/
-│       └── Brewfile        # Homebrew設定
-├── linux/                  # Linux固有設定
-│   ├── setup.sh            # セットアップスクリプト
-│   └── setup-asdf-plugin.sh
-└── scripts/                # セットアップスクリプト
-    └── setup-tools.sh      # 開発ツール一括インストール
+├── Makefile                  # dotfiles一括設定
+├── dotfiles/                 # 設定ファイル群
+│   ├── .zshrc               # zsh設定
+│   ├── .rc                  # 共通環境変数・alias
+│   ├── .config/nvim/        # LazyVim設定
+│   ├── .claude/             # Claude Code設定
+│   └── .ai/docs/            # AI関連ドキュメント
+├── mac/brew/                # Mac用設定
+│   └── Brewfile            # Homebrew設定
+└── git/                     # Git設定手順
+    └── README.md           # SSH設定等の手順書
 ```
 
-## 🔧 カスタマイズ
-
-### 環境固有の設定
-- `~/.zshrc_local` - ローカル固有のzsh設定
-- `~/.zshrc_Darwin` - Mac固有のzsh設定
-- `~/.zshrc_Linux` - Linux固有のzsh設定
-
-### 追加パッケージ
-asdfで管理されているパッケージは以下のコマンドで追加できます：
+## 🔧 管理コマンド
 
 ```bash
-asdf plugin add <package-name>
-asdf install <package-name> <version>
-asdf global <package-name> <version>
+make setup    # dotfilesのシンボリックリンクを作成
+make clean    # dotfilesのシンボリックリンクを削除
+make help     # ヘルプ表示
 ```
 
-## 🔄 更新方法
+## 🔄 更新・カスタマイズ
 
+### 設定の更新
 ```bash
 cd takenv
 git pull origin main
-
-# 必要に応じて新しい設定を適用
-source ~/.zshrc
+source ~/.zshrc  # 必要に応じて
 ```
+
+### 個人設定の追加
+設定ファイルは全てシンボリックリンクなので、リポジトリ内のファイルを直接編集すればOK
+
+## 🖥 インストールされるツール（Mac）
+
+### 必須ツール
+- zsh, git, mysql, fzf
+- Docker, iTerm2
+
+### 便利ツール
+- Google Chrome, Slack, Discord
+- Amazon Music, Clipy, Toggl Track
+- bat (cat代替), exa (ls代替), jq, tree
 
 ## ⚠️ 注意事項
 
-- 既存の設定ファイルは事前にバックアップしておくことを推奨
-- プラットフォーム固有の設定は該当するディレクトリの設定を使用
-- asdfで管理されているツールのバージョンは`.tool-versions`ファイルで管理
+- 既存の設定ファイルがある場合は自動でバックアップされません
+- 事前に重要な設定のバックアップを推奨
+- シンボリックリンク作成時、既存ファイルがある場合はスキップされます
 
 ## 🤝 貢献
 
-このリポジトリは個人使用を想定していますが、改善提案やバグ報告は歓迎します。
-
-## 📄 ライセンス
-
-個人使用のため、特定のライセンスは設定していません。
+個人用リポジトリですが、改善提案やIssueは歓迎します。
