@@ -39,6 +39,7 @@ plugins=(
   vi-mode
   zsh-syntax-highlighting
   zsh-autosuggestions
+  timer
 )
 source $ZSH/oh-my-zsh.sh
 
@@ -61,4 +62,12 @@ fpath=(${ASDF_DATA_DIR:-$HOME/.asdf}/completions $fpath)
 autoload -Uz compinit && compinit
 
 
-export GOOGLE_CLOUD_PROJECT="bak-pj"
+# export GOOGLE_CLOUD_PROJECT="bak-pj"
+
+# pnpm
+# export PNPM_HOME="$HOME/.pnpm"
+# case ":$PATH:" in
+#   *":$PNPM_HOME:"*) ;;
+#   *) export PATH="$PNPM_HOME:$PATH" ;;
+# esac
+# pnpm end

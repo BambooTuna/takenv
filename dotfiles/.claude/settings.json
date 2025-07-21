@@ -4,5 +4,8 @@
       "Bash(terminal-notifier:*)"
     ],
     "deny": []
+  },
+  "env": {
+    "MAX_THINKING_TOKENS": "31999"
   }
 }

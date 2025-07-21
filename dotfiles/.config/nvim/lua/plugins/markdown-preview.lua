@@ -1,9 +1,29 @@
 return {
-  "iamcco/markdown-preview.nvim",
-  cmd = { "MarkdownPreviewToggle", "MarkdownPreview", "MarkdownPreviewStop" },
-  build = "cd app && yarn install",
-  init = function()
-    vim.g.mkdp_filetypes = { "markdown" }
-  end,
-  ft = { "markdown" },
+  -- markdownでのconceal機能を無効化
+  {
+    "MeanderingProgrammer/render-markdown.nvim",
+    opts = function(_, opts)
+      opts.code = {
+        sign = false,
+        width = "full",
+        right_pad = 1,
+        style = "normal",
+        position = "left",
+        disable_background = { "diff" },
+        border = "thin",
+        above = "▄",
+        below = "▀",
+        highlight = "RenderMarkdownCode",
+        highlight_inline = "RenderMarkdownCodeInline",
+      }
+    end,
+  },
+  -- マークダウンファイルでのconceal設定を無効化
+  {
+    "nvim-treesitter/nvim-treesitter",
+    opts = function(_, opts)
+      opts.highlight = opts.highlight or {}
+      opts.highlight.additional_vim_regex_highlighting = { "markdown" }
+    end,
+  },
 }
