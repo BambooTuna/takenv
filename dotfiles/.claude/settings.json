@@ -1,11 +1,11 @@
 {
+  "env": {
+    "MAX_THINKING_TOKENS": "31999"
+  },
   "permissions": {
     "allow": [
       "Bash(terminal-notifier:*)"
     ],
     "deny": []
-  },
-  "env": {
-    "MAX_THINKING_TOKENS": "31999"
   }
 }
