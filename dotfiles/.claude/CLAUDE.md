@@ -5,6 +5,8 @@
 ## 通知
 必須: タスクの完了時またはユーザーへのメッセージ返信時に、`terminal-notifier -title "Cloud Code" -subtitle "DiQt Web" -message "Hi👋" -sound Pop` コマンドを一度だけ実行すること
 
+また編集したファイルは必ず ファイルを開いてから、 *mcp__ide__getDiagnostics* ツールでエラーがないことを確認すること。
+
 
 ## コーディング時の指示
 ### 実装レベルの適切な判断
