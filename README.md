@@ -48,6 +48,23 @@ make setup
 - `~/.claude` → `dotfiles/.claude`
 - `~/.ai` → `dotfiles/.ai`
 
+
+### 3.2 ツールのインストール
+
+```bash
+asdf plugin add neovim
+asdf install neovim latest
+asdf set -u neovim latest
+
+asdf plugin add lazygit
+asdf install lazygit 0.55.1
+asdf set -u lazygit 0.55.1
+```
+
+---
+
+*以下は不要*
+
 ### 4. プラットフォーム別設定（Mac）
 
 ```bash
