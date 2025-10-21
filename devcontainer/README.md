@@ -13,7 +13,7 @@
 
 ```bash
 cd /path/to/takenv
-docker compose up -d --build
+USER_UID=$(id -u) USER_GID=$(id -g) docker compose up -d --build
 ```
 
 ビルドには5-10分程度かかります。
