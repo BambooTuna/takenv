@@ -41,8 +41,13 @@ RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /
 # Setup locale
 RUN locale-gen ja_JP.UTF-8
 
-# Create development user
-RUN useradd -m -s /bin/zsh -G sudo devuser
+# User configuration
+ARG USER_UID=1000
+ARG USER_GID=1000
+
+# Create development user with specified UID/GID
+RUN groupadd -g ${USER_GID} devuser && \
+    useradd -m -s /bin/zsh -u ${USER_UID} -g ${USER_GID} -G sudo devuser
 
 # Allow devuser to use sudo without password
 RUN echo "devuser ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/devuser && \
