@@ -11,6 +11,18 @@ alias ga="git add"
 alias gc="git commit -m"
 alias gp="git push origin"
 
+# tmux ls (セッション一覧表示)
+alias tls='tmux ls'
+
+# tmux attach -t [name] (指定セッションにアタッチ)
+alias ta='tmux attach -t'
+
+# tmux new -s [name] (指定セッションを新規作成)
+alias tns='tmux new -s'
+
+# (指定セッションがあればアタッチ、なければ新規作成する)
+alias ts='tmux new-session -A -s'
+
 # path
 export GO111MODULE=on
 export GOPATH=$HOME/go
