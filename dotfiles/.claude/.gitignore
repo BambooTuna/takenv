@@ -7,3 +7,4 @@ shell-snapshots
 history.jsonl
 runtime
 debug
+.credentials.json
