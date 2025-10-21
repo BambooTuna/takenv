@@ -54,3 +54,6 @@ _testmain.go
 /protodep.lock
 BUILD.bazel
 tmp/*
+
+# log
+*.log

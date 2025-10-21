@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  db:
+    image: pgvector/pgvector:pg15
+    restart: always
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=takenv
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+  takenv:
+    build:
+      context: .
+      dockerfile: devcontainer/Dockerfile
+    container_name: takenv-dev
+    volumes:
+      - .:/workspace
+    restart: unless-stopped
+    stdin_open: true
+    tty: true

@@ -9,7 +9,10 @@ setup:
 	
 	# .rcのリンク作成
 	@test ! -e ~/.rc && ln -sf $(PWD)/dotfiles/.rc ~/.rc && echo "✓ ~/.rc のリンクを作成しました" || echo "✓ ~/.rc は既に存在します"
-	
+
+	# .tmux.confのリンク作成
+	@test ! -e ~/.tmux.conf && ln -sf $(PWD)/dotfiles/.tmux.conf ~/.tmux.conf && echo "✓ ~/.tmux.conf のリンクを作成しました" || echo "✓ ~/.tmux.conf は既に存在します"
+
 	# .config/nvimのリンク作成
 	@mkdir -p ~/.config
 	@test ! -e ~/.config/nvim && ln -sf $(PWD)/dotfiles/.config/nvim ~/.config/nvim && echo "✓ ~/.config/nvim のリンクを作成しました" || echo "✓ ~/.config/nvim は既に存在します"
@@ -25,6 +28,7 @@ setup:
 	@echo "作成されたリンク:"
 	@echo "  ~/.zshrc -> $(PWD)/dotfiles/.zshrc"
 	@echo "  ~/.rc -> $(PWD)/dotfiles/.rc"
+	@echo "  ~/.tmux.conf -> $(PWD)/dotfiles/.tmux.conf"
 	@echo "  ~/.config/nvim -> $(PWD)/dotfiles/.config/nvim"
 	@echo "  ~/.claude -> $(PWD)/dotfiles/.claude"
 
@@ -33,6 +37,7 @@ clean:
 	@echo "dotfilesのリンクを削除します..."
 	@rm -f ~/.zshrc
 	@rm -f ~/.rc
+	@rm -f ~/.tmux.conf
 	@rm -rf ~/.config/nvim
 	@rm -rf ~/.claude
 	@echo "✓ dotfilesのリンクを削除しました"
