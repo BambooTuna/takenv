@@ -19,3 +19,6 @@ vim.g.clipboard = {
     ["*"] = require("vim.ui.clipboard.osc52").paste("*"),
   },
 }
+
+-- ターミナルのデフォルトシェルをzshに設定
+vim.o.shell = "zsh"
