@@ -18,6 +18,9 @@ RUN apt-get update && apt-get install -y \
   locales \
   ca-certificates \
   tmux \
+  apt-transport-https \
+  gnupg \
+  lsb-release \
   # Python build dependencies
   libssl-dev \
   libffi-dev \
@@ -29,6 +32,12 @@ RUN apt-get update && apt-get install -y \
   zlib1g-dev \
   && rm -rf /var/lib/apt/lists/*
 
+# Install Docker CLI
+RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+  apt-get update && apt-get install -y docker-ce-cli docker-compose-plugin && \
+  rm -rf /var/lib/apt/lists/*
+
 # Setup locale
 RUN locale-gen ja_JP.UTF-8
 
@@ -38,6 +47,9 @@ RUN useradd -m -s /bin/zsh -G sudo devuser
 # Allow devuser to use sudo without password
 RUN echo "devuser ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/devuser && \
   chmod 0440 /etc/sudoers.d/devuser
+
+# Add devuser to docker group
+RUN groupadd -f docker && usermod -aG docker devuser
 
 USER devuser
 WORKDIR /home/devuser
@@ -69,6 +81,10 @@ RUN git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ~/.oh-my-
 # Copy repository
 COPY --chown=devuser:devuser . /home/devuser/takenv
 
+# Copy and setup entrypoint
+COPY --chown=devuser:devuser devcontainer/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN sudo chmod +x /usr/local/bin/entrypoint.sh
+
 # Setup dotfiles
 WORKDIR /home/devuser/takenv
 RUN make setup
@@ -97,11 +113,17 @@ RUN asdf plugin add nodejs && \
   asdf install nodejs 24.10.0 && \
   asdf set -u nodejs 24.10.0
 
+# Install gcloud
+RUN asdf plugin add gcloud https://github.com/jthegedus/asdf-gcloud && \
+  asdf install gcloud latest && \
+  asdf set -u gcloud latest
+
 # Install pm2
 RUN npm install -g pm2 @anthropic-ai/claude-code
 
 # Set working directory
 WORKDIR /workspace
 
-# Default command
+# Entrypoint and default command
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["/bin/zsh"]
