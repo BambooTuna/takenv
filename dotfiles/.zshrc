@@ -45,9 +45,9 @@ source $ZSH/oh-my-zsh.sh
 
 
 ## fzf
-export PATH="$PATH:$HOME/.vim/plugged/fzf/bin"
-[ -f $HOME/.vim/plugged/fzf/shell/completion.zsh ] && source $HOME/.vim/plugged/fzf/shell/completion.zsh
-[ -f $HOME/.vim/plugged/fzf/shell/key-bindings.zsh ] && source $HOME/.vim/plugged/fzf/shell/key-bindings.zsh
+export PATH="$PATH:$HOME/.local/share/nvim/lazy/fzf/bin"
+[ -f $HOME/.local/share/nvim/lazy/fzf/shell/completion.zsh ] && source $HOME/.local/share/nvim/lazy/fzf/shell/completion.zsh
+[ -f $HOME/.local/share/nvim/lazy/fzf/shell/key-bindings.zsh ] && source $HOME/.local/share/nvim/lazy/fzf/shell/key-bindings.zsh
 
 
 [ -f $HOME/.zshrc_`uname` ] && . $HOME/.zshrc_`uname`

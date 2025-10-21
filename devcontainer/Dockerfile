@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
   zsh \
   sudo \
   ripgrep \
+  postgresql-client \
   build-essential \
   unzip \
   locales \
@@ -48,13 +49,13 @@ ARG USER_GID=1000
 # Create development user with specified UID/GID
 # Remove existing user/group if they exist with the same UID/GID
 RUN if getent passwd ${USER_UID} > /dev/null; then \
-      userdel -r $(getent passwd ${USER_UID} | cut -d: -f1) || true; \
-    fi && \
-    if getent group ${USER_GID} > /dev/null; then \
-      groupdel $(getent group ${USER_GID} | cut -d: -f1) || true; \
-    fi && \
-    groupadd -g ${USER_GID} devuser && \
-    useradd -m -s /bin/zsh -u ${USER_UID} -g ${USER_GID} -G sudo devuser
+  userdel -r $(getent passwd ${USER_UID} | cut -d: -f1) || true; \
+  fi && \
+  if getent group ${USER_GID} > /dev/null; then \
+  groupdel $(getent group ${USER_GID} | cut -d: -f1) || true; \
+  fi && \
+  groupadd -g ${USER_GID} devuser && \
+  useradd -m -s /bin/zsh -u ${USER_UID} -g ${USER_GID} -G sudo devuser
 
 # Allow devuser to use sudo without password
 RUN echo "devuser ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/devuser && \
