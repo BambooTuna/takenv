@@ -1,40 +1,97 @@
 #!/bin/zsh
 mkdir -p ~/workspace
 
-# Install asdf (idempotent)
-if [ ! -d ~/.asdf/bin ]; then
-  ARCH=$(uname -m)
-  case ${ARCH} in
-    x86_64) ASDF_ARCH="linux-amd64" ;;
-    aarch64) ASDF_ARCH="linux-arm64" ;;
-    i386|i686) ASDF_ARCH="linux-386" ;;
-    *) echo "Unsupported architecture: ${ARCH}" && exit 1 ;;
-  esac
-
-  wget -q https://github.com/asdf-vm/asdf/releases/download/v0.18.0/asdf-v0.18.0-${ASDF_ARCH}.tar.gz -O /tmp/asdf.tar.gz
-  mkdir -p ~/.asdf/bin
-  tar -xzf /tmp/asdf.tar.gz -C ~/.asdf/bin
-  rm /tmp/asdf.tar.gz
+# Install asdf (force reinstall)
+echo "📦 Installing asdf..."
+if [ -d ~/.asdf/bin ]; then
+  echo "  + Removing existing asdf installation..."
+  rm -rf ~/.asdf
 fi
 
-# Install oh-my-zsh (idempotent)
-if [ ! -d ~/.oh-my-zsh ]; then
+OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+ARCH=$(uname -m)
+
+case ${OS} in
+  linux)
+    case ${ARCH} in
+      x86_64) ASDF_ARCH="linux-amd64" ;;
+      aarch64) ASDF_ARCH="linux-arm64" ;;
+      i386|i686) ASDF_ARCH="linux-386" ;;
+      *) echo "Unsupported architecture: ${ARCH}" && exit 1 ;;
+    esac
+    ;;
+  darwin)
+    case ${ARCH} in
+      x86_64) ASDF_ARCH="darwin-amd64" ;;
+      arm64) ASDF_ARCH="darwin-arm64" ;;
+      *) echo "Unsupported architecture: ${ARCH}" && exit 1 ;;
+    esac
+    ;;
+  *)
+    echo "Unsupported OS: ${OS}" && exit 1 ;;
+esac
+
+echo "  + Downloading asdf v0.18.0 for ${ASDF_ARCH}..."
+wget -q https://github.com/asdf-vm/asdf/releases/download/v0.18.0/asdf-v0.18.0-${ASDF_ARCH}.tar.gz -O /tmp/asdf.tar.gz
+mkdir -p ~/.asdf/bin
+tar -xzf /tmp/asdf.tar.gz -C ~/.asdf/bin
+rm /tmp/asdf.tar.gz
+echo "✓ asdf installed"
+
+# Install oh-my-zsh (update if exists)
+echo ""
+echo "📦 Installing oh-my-zsh..."
+if [ -d ~/.oh-my-zsh ]; then
+  echo "  + Updating existing oh-my-zsh..."
+  cd ~/.oh-my-zsh && git pull && cd - > /dev/null
+  echo "  ✓ oh-my-zsh updated"
+else
+  echo "  + Cloning oh-my-zsh..."
   git clone https://github.com/ohmyzsh/ohmyzsh.git ~/.oh-my-zsh
+  echo "  ✓ oh-my-zsh installed"
 fi
 
-# Install oh-my-zsh plugins (idempotent)
-if [ ! -d ~/.oh-my-zsh/plugins/zsh-syntax-highlighting ]; then
-  git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ~/.oh-my-zsh/plugins/zsh-syntax-highlighting
+# Install oh-my-zsh plugins (update if exists)
+echo ""
+echo "📦 Installing oh-my-zsh plugins..."
+
+PLUGIN_DIR=~/.oh-my-zsh/plugins/zsh-syntax-highlighting
+if [ -d "$PLUGIN_DIR" ]; then
+  echo "  + Updating zsh-syntax-highlighting..."
+  cd "$PLUGIN_DIR" && git pull && cd - > /dev/null
+  echo "  ✓ zsh-syntax-highlighting updated"
+else
+  echo "  + Cloning zsh-syntax-highlighting..."
+  git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "$PLUGIN_DIR"
+  echo "  ✓ zsh-syntax-highlighting installed"
 fi
 
-if [ ! -d ~/.oh-my-zsh/plugins/zsh-autosuggestions ]; then
-  git clone https://github.com/zsh-users/zsh-autosuggestions.git ~/.oh-my-zsh/plugins/zsh-autosuggestions
+PLUGIN_DIR=~/.oh-my-zsh/plugins/zsh-autosuggestions
+if [ -d "$PLUGIN_DIR" ]; then
+  echo "  + Updating zsh-autosuggestions..."
+  cd "$PLUGIN_DIR" && git pull && cd - > /dev/null
+  echo "  ✓ zsh-autosuggestions updated"
+else
+  echo "  + Cloning zsh-autosuggestions..."
+  git clone https://github.com/zsh-users/zsh-autosuggestions.git "$PLUGIN_DIR"
+  echo "  ✓ zsh-autosuggestions installed"
 fi
 
-if [ ! -d ~/workspace/BambooTuna/takenv ]; then
-  git clone https://github.com/BambooTuna/takenv.git ~/workspace/BambooTuna/takenv
+echo ""
+echo "📦 Installing takenv repository..."
+TAKENV_DIR=~/workspace/BambooTuna/takenv
+if [ -d "$TAKENV_DIR" ]; then
+  echo "  + Updating existing takenv repository..."
+  cd "$TAKENV_DIR" && git pull && cd - > /dev/null
+  echo "  ✓ takenv repository updated"
+else
+  echo "  + Cloning takenv repository..."
+  git clone https://github.com/BambooTuna/takenv.git "$TAKENV_DIR"
+  echo "  ✓ takenv repository cloned"
 fi
 
+echo ""
+echo "🔧 Setting up takenv..."
 cd ~/workspace/BambooTuna/takenv && make clean && make setup
 
 # Source .zshrc to load asdf configuration
