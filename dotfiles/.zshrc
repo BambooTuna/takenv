@@ -55,6 +55,7 @@ export PATH="$PATH:$HOME/.local/share/nvim/lazy/fzf/bin"
 
 # asdf
 ## required
+export PATH="${ASDF_DATA_DIR:-$HOME/.asdf}/bin:$PATH"
 export PATH="${ASDF_DATA_DIR:-$HOME/.asdf}/shims:$PATH"
 ## append completions to fpath
 fpath=(${ASDF_DATA_DIR:-$HOME/.asdf}/completions $fpath)
