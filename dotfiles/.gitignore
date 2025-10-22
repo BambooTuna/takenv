@@ -36,3 +36,5 @@
 
 !/.claude/
 !/.claude/**
+
+!/.tmux.conf

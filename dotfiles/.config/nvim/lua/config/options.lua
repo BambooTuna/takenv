@@ -22,3 +22,5 @@ vim.g.clipboard = {
 
 -- ターミナルのデフォルトシェルをzshに設定
 vim.o.shell = "zsh"
+
+vim.opt.termguicolors = true
