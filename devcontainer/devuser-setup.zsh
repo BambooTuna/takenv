@@ -105,19 +105,16 @@ typeset -A asdf_tools=(
   nodejs "24.10.0"
 )
 
-# Add plugins in parallel (idempotent)
+# Add plugins serially (idempotent)
 echo "📦 Adding asdf plugins..."
 for tool in "${(@k)asdf_tools}"; do
-  (
-    if asdf plugin list | grep -q "^${tool}$"; then
-      echo "  ✓ Plugin $tool already exists"
-    else
-      echo "  + Adding plugin $tool..."
-      asdf plugin add "$tool" && echo "  ✓ Added plugin $tool"
-    fi
-  ) &
+  if asdf plugin list | grep -q "^${tool}$"; then
+    echo "  ✓ Plugin $tool already exists"
+  else
+    echo "  + Adding plugin $tool..."
+    asdf plugin add "$tool" && echo "  ✓ Added plugin $tool"
+  fi
 done
-wait
 echo "✓ All plugins added"
 
 # Install tools in parallel (idempotent)
