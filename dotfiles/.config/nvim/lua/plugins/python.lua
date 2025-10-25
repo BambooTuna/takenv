@@ -6,7 +6,7 @@ return {
         pyright = {
           settings = {
             python = {
-              pythonPath = vim.fn.system("asdf which python"):gsub("\n", ""),
+              pythonPath = vim.fn.system("which python"):gsub("\n", ""),
               analysis = {
                 autoSearchPaths = true,
                 useLibraryCodeForTypes = true,
@@ -20,3 +20,4 @@ return {
     },
   },
 }
+
