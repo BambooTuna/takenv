@@ -1,3 +1,7 @@
+if true then
+  return {}
+end
+
 -- TypeScript/JavaScript設定
 -- vtslsの無限ロード問題のため、tsserverを使用
 return {
