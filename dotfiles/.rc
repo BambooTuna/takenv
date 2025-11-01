@@ -11,6 +11,25 @@ alias ga="git add"
 alias gc="git commit -m"
 alias gp="git push origin"
 
+# git worktree add のショートカット (例: gwa feature/some -> ../feature-some)
+gwa() {
+    if [ -z "$1" ]; then
+        echo "Usage: gwa <branch-name>"
+        return 1
+    fi
+    local branch="$1"
+    local dir="${branch//\//-}"
+
+    # ブランチが存在するかチェック
+    if git show-ref --verify --quiet "refs/heads/$branch"; then
+        # 既存ブランチの場合
+        git worktree add "../$dir" "$branch"
+    else
+        # 新規ブランチの場合
+        git worktree add "../$dir" -b "$branch"
+    fi
+}
+
 # tmux ls (セッション一覧表示)
 alias tls='tmux ls'
 
@@ -31,15 +50,4 @@ export PATH="$PATH:$GOPATH/bin"
 export PATH="$PATH:$HOME/bin"
 export PATH="$PATH":"$HOME/.pub-cache/bin"
 
-# Git worktreeを作成して移動 (ブランチ名から自動的にworktreeパスを生成)
-gwa() {
-  if [ -z "$1" ]; then
-    echo "Usage: gwa <branch-name>"
-    return 1
-  fi
-  local branch="$1"
-  local worktree_name="${branch//\//-}"
-  local path="../${worktree_name}-worktree"
-  git worktree add "$path" -b "$branch" && cd "$path"
-}
 

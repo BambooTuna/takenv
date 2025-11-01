@@ -22,6 +22,10 @@ vim.keymap.set("v", "<S-l>", "$", { desc = "Cursor to end" })
 vim.keymap.set("v", "J", ":move '>+1<CR>gv-gv", { desc = "Move lines of code up" })
 vim.keymap.set("v", "K", ":move '<-2<CR>gv-gv", { desc = "Move lines of code down" })
 
+-- インデント操作（選択を維持）
+vim.keymap.set("v", "<Tab>", ">gv", { desc = "Indent" })
+vim.keymap.set("v", "<S-Tab>", "<gv", { desc = "Dedent" })
+
 -- インサートモード
 vim.keymap.set("i", "jj", "<esc>", { desc = "Exit insert mode" })
 
@@ -39,6 +43,10 @@ vim.keymap.set("i", "<C-l>", "<Right>", { desc = "Move right" })
 
 -- エディター
 vim.keymap.set("i", "<C-v>", "<C-r>+", { desc = "Paste from clipboard" })
+
+-- インデント操作
+vim.keymap.set("i", "<Tab>", "<C-t>", { desc = "Indent" })
+vim.keymap.set("i", "<S-Tab>", "<C-d>", { desc = "Dedent" })
 
 -- ノーマルモード
 -- 方向キーの制限
@@ -67,3 +75,9 @@ vim.keymap.set("n", "<S-j>", "viw", { desc = "Word selection" })
 
 -- バッファー削除
 vim.keymap.set("n", "<leader>dd", "<cmd>bdelete<cr>", { desc = "Delete buffer" })
+
+-- 折りたたみ
+vim.keymap.set("n", "<leader>z", "za", { silent = true, desc = "Toggle fold" })
+vim.keymap.set("n", "<leader>Z", "zA", { silent = true, desc = "Toggle fold recursively" })
+vim.keymap.set("n", "<leader>zr", "zR", { silent = true, desc = "Open all folds" })
+vim.keymap.set("n", "<leader>zm", "zM", { silent = true, desc = "Close all folds" })
