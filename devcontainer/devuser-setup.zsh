@@ -159,7 +159,7 @@ fi
 SSH_KEY_PATH=~/.ssh/id_ed25519_github
 if [ ! -f "$SSH_KEY_PATH" ]; then
   echo "  + Generating SSH key for GitHub..."
-  ssh-keygen -t ed25519 -f "$SSH_KEY_PATH" -N "" -C "devuser@devcontainer"
+  ssh-keygen -t ed25519 -f "$SSH_KEY_PATH" -N "" -C "$(whoami)@$(hostname)"
   chmod 600 "$SSH_KEY_PATH"
   chmod 644 "${SSH_KEY_PATH}.pub"
   echo "  ✓ Generated SSH key: $SSH_KEY_PATH"
