@@ -12,6 +12,7 @@ return {
                 useLibraryCodeForTypes = true,
                 diagnosticMode = "workspace",
                 typeCheckingMode = "basic",
+                exclude = { "**/node_modules", "**/__pycache__", "**/.*", "**/dist", "**/build" },
               },
             },
           },

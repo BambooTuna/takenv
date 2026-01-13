@@ -1,3 +1,7 @@
+if true then
+  return {}
+end
+
 -- TypeScript/JavaScript設定
 -- LazyVimフレームワークをバイパスしてvtslsを直接起動
 return {
@@ -35,8 +39,7 @@ return {
         on_attach = on_attach,
         -- root_dir検出
         root_dir = function(fname)
-          return util.root_pattern("tsconfig.json", "package.json")(fname)
-            or util.root_pattern(".git")(fname)
+          return util.root_pattern("tsconfig.json", "package.json")(fname) or util.root_pattern(".git")(fname)
         end,
         -- 単一ファイルサポート無効
         single_file_support = false,
