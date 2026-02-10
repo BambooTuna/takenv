@@ -1,3 +1,4 @@
+settings.local.json
 ide
 file-history
 projects
@@ -12,3 +13,6 @@ plugins
 cache
 .credentials.json
 stats-cache.json
+paste-cache
+tasks
+teams
