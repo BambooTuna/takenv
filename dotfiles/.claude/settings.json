@@ -1,4 +1,8 @@
 {
+  "statusLine": {
+    "type": "command",
+    "command": "sh /Users/suzukitakeo/.claude/statusline-command.sh"
+  },
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
@@ -18,10 +22,15 @@
       "Write(**/secrets/**)",
       "mcp__playwright__browser"
     ],
-    "ask": ["Bash(rm:*)", "Bash(rm -rf:*)"],
-    "defaultMode": "delegate"
+    "ask": [
+      "Bash(rm:*)",
+      "Bash(rm -rf:*)"
+    ]
+  },
+  "model": "opus",
+  "enabledPlugins": {
+    "commit-commands@claude-plugins-official": true
   },
   "alwaysThinkingEnabled": true,
-  "autoUpdatesChannel": "latest",
-  "model": "opus"
+  "autoUpdatesChannel": "latest"
 }

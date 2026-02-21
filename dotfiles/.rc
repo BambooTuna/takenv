@@ -39,8 +39,10 @@ alias ta='tmux attach -t'
 # tmux new -s [name] (指定セッションを新規作成)
 alias tns='tmux new -s'
 
-# (指定セッションがあればアタッチ、なければ新規作成する)
-alias ts='tmux new-session -A -s'
+# (指定セッションがあればリンクセッションでアタッチ、なければ新規作成する)
+ts() {
+    tmux new-session -t "$1" 2>/dev/null || tmux new-session -s "$1"
+}
 
 # path
 export GO111MODULE=on
