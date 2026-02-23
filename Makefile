@@ -16,6 +16,9 @@ setup:
 	# .config/nvimのリンク作成
 	@mkdir -p ~/.config
 	@test ! -e ~/.config/nvim && ln -sf $(PWD)/dotfiles/.config/nvim ~/.config/nvim && echo "✓ ~/.config/nvim のリンクを作成しました" || echo "✓ ~/.config/nvim は既に存在します"
+
+	# .config/weztermのリンク作成
+	@test ! -e ~/.config/wezterm && ln -sf $(PWD)/dotfiles/.config/wezterm ~/.config/wezterm && echo "✓ ~/.config/wezterm のリンクを作成しました" || echo "✓ ~/.config/wezterm は既に存在します"
 	
 	# .claudeのリンク作成
 	@test ! -e ~/.claude && ln -sf $(PWD)/dotfiles/.claude ~/.claude && echo "✓ ~/.claude のリンクを作成しました" || echo "✓ ~/.claude は既に存在します"
@@ -30,6 +33,7 @@ setup:
 	@echo "  ~/.rc -> $(PWD)/dotfiles/.rc"
 	@echo "  ~/.tmux.conf -> $(PWD)/dotfiles/.tmux.conf"
 	@echo "  ~/.config/nvim -> $(PWD)/dotfiles/.config/nvim"
+	@echo "  ~/.config/wezterm -> $(PWD)/dotfiles/.config/wezterm"
 	@echo "  ~/.claude -> $(PWD)/dotfiles/.claude"
 
 # リンクの削除
@@ -39,6 +43,7 @@ clean:
 	@rm -f ~/.rc
 	@rm -f ~/.tmux.conf
 	@rm -rf ~/.config/nvim
+	@rm -rf ~/.config/wezterm
 	@rm -rf ~/.claude
 	@echo "✓ dotfilesのリンクを削除しました"
 

@@ -41,7 +41,11 @@ alias tns='tmux new -s'
 
 # (指定セッションがあればリンクセッションでアタッチ、なければ新規作成する)
 ts() {
-    tmux new-session -t "$1" 2>/dev/null || tmux new-session -s "$1"
+    if [ -n "$TMUX" ]; then
+        tmux switch-client -t "$1" 2>/dev/null || tmux new-session -d -s "$1" \; switch-client -t "$1"
+    else
+        tmux attach-session -t "$1" 2>/dev/null || tmux new-session -s "$1"
+    fi
 }
 
 # path
