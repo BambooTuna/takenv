@@ -1,5 +1,5 @@
 #!/bin/sh
-CACHE_FILE="/tmp/claude-statusline-cache.json"
+CACHE_FILE="${HOME}/.claude/statusline-cache.json"
 CACHE_TTL=60
 
 # ISO8601 → 残り時間の人間が読みやすい形式（例: 2.3h, 5d）
@@ -7,11 +7,13 @@ format_time_remaining() {
   reset_at="$1"
   now=$(date -u +%s)
 
+  # サブ秒・タイムゾーンオフセットを除去して "2006-01-02T15:04:05Z" 形式に正規化
+  reset_normalized=$(echo "$reset_at" | sed -e 's/\.[0-9]*//' -e 's/[+-][0-9][0-9]:[0-9][0-9]$/Z/')
   OS=$(uname -s)
   if [ "$OS" = "Darwin" ]; then
-    target=$(date -j -u -f "%Y-%m-%dT%H:%M:%SZ" "$reset_at" +%s 2>/dev/null)
+    target=$(date -j -u -f "%Y-%m-%dT%H:%M:%SZ" "$reset_normalized" +%s 2>/dev/null)
   else
-    target=$(date -u -d "$reset_at" +%s 2>/dev/null)
+    target=$(date -u -d "$reset_normalized" +%s 2>/dev/null)
   fi
 
   if [ -z "$target" ]; then
@@ -70,7 +72,7 @@ get_cached_data() {
 
 # API からレート制限データを取得してキャッシュに保存
 fetch_usage_data() {
-  TOKEN=$(jq -r '.claudeAiOauth.accessToken // empty' ~/.claude/.credentials.json 2>/dev/null)
+  TOKEN=$(security find-generic-password -s "Claude Code-credentials" -a "$(whoami)" -w 2>/dev/null | jq -r '.claudeAiOauth.accessToken // empty')
   if [ -z "$TOKEN" ]; then
     return 1
   fi
@@ -91,27 +93,41 @@ fetch_usage_data() {
   fi
 
   now=$(date +%s)
-  echo "$RESPONSE" | jq --argjson ts "$now" '. + {cached_at: $ts}' > "$CACHE_FILE"
-  chmod 600 "$CACHE_FILE"
+  # umask 077 でパーミッション600保証（chmod 600 のレースコンディション回避）
+  (umask 077; echo "$RESPONSE" | jq --argjson ts "$now" '. + {cached_at: $ts}' > "$CACHE_FILE")
   echo "$RESPONSE"
   return 0
 }
 
 # --- メイン処理 ---
 input=$(cat)
-cwd=$(echo "$input" | jq -r '.workspace.current_dir // .cwd // ""')
-model=$(echo "$input" | jq -r '.model.display_name // ""')
-used=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
-cost=$(echo "$input" | jq -r '.cost.total_cost_usd // empty')
 
-# ホームディレクトリを ~ に短縮
-short_cwd=$(echo "$cwd" | sed "s|$HOME|~|")
+# 1回のjq呼び出しでstdinの全フィールドをTAB区切りで取得
+_parsed=$(echo "$input" | jq -r '
+  [
+    (.workspace.current_dir // .cwd // ""),
+    (.model.display_name // ""),
+    ((.context_window.used_percentage // "") | tostring),
+    ((.cost.total_cost_usd // "") | tostring)
+  ] | join("\t")
+')
+_old_IFS="$IFS"
+IFS="$(printf '\t')"
+read -r cwd model used cost << HDOC
+$_parsed
+HDOC
+IFS="$_old_IFS"
+unset _parsed _old_IFS
+
+# ホームディレクトリを ~ に短縮（メタ文字安全）
+short_cwd="${cwd#"$HOME"}"
+[ "$short_cwd" != "$cwd" ] && short_cwd="~$short_cwd"
 
 # モデル名を短縮（例: "Claude Sonnet 4.6" → "Sonnet 4.6"）
 short_model=$(echo "$model" | sed 's/^Claude //')
 
 # --- コンテキストウィンドウ プログレスバー ---
-if [ -n "$used" ]; then
+if [ -n "$used" ] && [ "$used" != "null" ]; then
   used_int=$(printf "%.0f" "$used")
   bar_len=10
   filled=$(( used_int * bar_len / 100 ))
@@ -131,20 +147,36 @@ fi
 usage_data=$(get_cached_data) || usage_data=$(fetch_usage_data)
 
 if [ -n "$usage_data" ]; then
-  five_h_pct=$(echo "$usage_data" | jq '.five_hour.utilization // empty' 2>/dev/null)
-  five_h_reset=$(echo "$usage_data" | jq -r '.five_hour.resets_at // empty' 2>/dev/null)
-  seven_d_pct=$(echo "$usage_data" | jq '.seven_day.utilization // empty' 2>/dev/null)
-  seven_d_reset=$(echo "$usage_data" | jq -r '.seven_day.resets_at // empty' 2>/dev/null)
+  # 1回のjq呼び出しでレート制限フィールドを取得
+  _rate=$(echo "$usage_data" | jq -r '
+    [
+      ((.five_hour.utilization // "") | tostring),
+      (.five_hour.resets_at // ""),
+      ((.seven_day.utilization // "") | tostring),
+      (.seven_day.resets_at // "")
+    ] | join("\t")
+  ')
+  _old_IFS="$IFS"
+  IFS="$(printf '\t')"
+  read -r five_h_pct five_h_reset seven_d_pct seven_d_reset << HDOC
+$_rate
+HDOC
+  IFS="$_old_IFS"
+  unset _rate _old_IFS
 
-  if [ -n "$five_h_pct" ] && [ -n "$seven_d_pct" ]; then
+  if [ -n "$five_h_pct" ] && [ "$five_h_pct" != "null" ] && \
+     [ -n "$seven_d_pct" ] && [ "$seven_d_pct" != "null" ]; then
     five_h_remain=$(format_time_remaining "$five_h_reset")
     seven_d_remain=$(format_time_remaining "$seven_d_reset")
 
-    five_color=$(get_color "$five_h_pct")
-    seven_color=$(get_color "$seven_d_pct")
+    # 小数値を整数に変換してから色・表示に使用（C2対策）
+    five_h_int=$(printf "%.0f" "$five_h_pct")
+    seven_d_int=$(printf "%.0f" "$seven_d_pct")
+    five_color=$(get_color "$five_h_int")
+    seven_color=$(get_color "$seven_d_int")
 
     rate_part=$(printf "⚡${five_color}5h:%d%%→%s\033[0m ${seven_color}7d:%d%%→%s\033[0m" \
-      "$five_h_pct" "$five_h_remain" "$seven_d_pct" "$seven_d_remain")
+      "$five_h_int" "$five_h_remain" "$seven_d_int" "$seven_d_remain")
   else
     rate_part="⚡---"
   fi
@@ -153,7 +185,7 @@ else
 fi
 
 # --- コスト ---
-if [ -n "$cost" ]; then
+if [ -n "$cost" ] && [ "$cost" != "null" ]; then
   cost_part=$(printf "\$%.2f" "$cost")
 else
   cost_part=""

@@ -18,3 +18,5 @@ tasks
 teams
 telemetry
 backups
+
+statusline-cache.json
