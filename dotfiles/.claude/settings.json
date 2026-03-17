@@ -13,22 +13,22 @@
       "Read(.env.*)",
       "Read(id_rsa)",
       "Read(id_ed25519)",
-      "Read(**/*token*)",
       "Write(.env*)",
       "Write(**/secrets/**)",
       "mcp__playwright__browser"
     ],
-    "ask": ["Bash(rm:*)", "Bash(rm -rf:*)"]
+    "ask": ["Read(**/*token*)", "Bash(rm:*)", "Bash(rm -rf:*)"]
   },
-  "model": "opus",
+  "model": "opus[1m]",
   "statusLine": {
     "type": "command",
     "command": "sh ~/.claude/statusline-command.sh"
   },
   "enabledPlugins": {
-    "commit-commands@claude-plugins-official": true
+    "commit-commands@claude-plugins-official": true,
+    "frontend-design@claude-code-plugins": true
   },
+  "language": "日本語",
   "alwaysThinkingEnabled": true,
-  "autoUpdatesChannel": "latest",
-  "language": "日本語"
+  "autoUpdatesChannel": "latest"
 }
