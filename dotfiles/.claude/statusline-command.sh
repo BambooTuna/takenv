@@ -108,12 +108,14 @@ _parsed=$(echo "$input" | jq -r '
     (.workspace.current_dir // .cwd // ""),
     (.model.display_name // ""),
     ((.context_window.used_percentage // "") | tostring),
-    ((.cost.total_cost_usd // "") | tostring)
+    ((.cost.total_cost_usd // "") | tostring),
+    ((.rate_limits.five_hour.used_percentage // "") | tostring),
+    ((.rate_limits.seven_day.used_percentage // "") | tostring)
   ] | join("\t")
 ')
 _old_IFS="$IFS"
 IFS="$(printf '\t')"
-read -r cwd model used cost << HDOC
+read -r cwd model used cost stdin_five_h stdin_seven_d << HDOC
 $_parsed
 HDOC
 IFS="$_old_IFS"
@@ -144,42 +146,81 @@ else
 fi
 
 # --- レート制限データ ---
-usage_data=$(get_cached_data) || usage_data=$(fetch_usage_data)
+# stdinから使用率が取れるか判定
+_have_stdin_rate=""
+if [ -n "$stdin_five_h" ] && [ "$stdin_five_h" != "null" ] && \
+   [ -n "$stdin_seven_d" ] && [ "$stdin_seven_d" != "null" ]; then
+  _have_stdin_rate=1
+  five_h_pct="$stdin_five_h"
+  seven_d_pct="$stdin_seven_d"
+fi
 
-if [ -n "$usage_data" ]; then
-  # 1回のjq呼び出しでレート制限フィールドを取得
-  _rate=$(echo "$usage_data" | jq -r '
-    [
-      ((.five_hour.utilization // "") | tostring),
-      (.five_hour.resets_at // ""),
-      ((.seven_day.utilization // "") | tostring),
-      (.seven_day.resets_at // "")
-    ] | join("\t")
-  ')
-  _old_IFS="$IFS"
-  IFS="$(printf '\t')"
-  read -r five_h_pct five_h_reset seven_d_pct seven_d_reset << HDOC
+# stdinから取れない場合はAPIにフォールバック
+if [ -z "$_have_stdin_rate" ]; then
+  usage_data=$(get_cached_data) || usage_data=$(fetch_usage_data)
+  if [ -n "$usage_data" ]; then
+    _rate=$(echo "$usage_data" | jq -r '
+      [
+        ((.five_hour.utilization // "") | tostring),
+        (.five_hour.resets_at // ""),
+        ((.seven_day.utilization // "") | tostring),
+        (.seven_day.resets_at // "")
+      ] | join("\t")
+    ')
+    _old_IFS="$IFS"
+    IFS="$(printf '\t')"
+    read -r five_h_pct five_h_reset seven_d_pct seven_d_reset << HDOC
 $_rate
 HDOC
-  IFS="$_old_IFS"
-  unset _rate _old_IFS
-
-  if [ -n "$five_h_pct" ] && [ "$five_h_pct" != "null" ] && \
-     [ -n "$seven_d_pct" ] && [ "$seven_d_pct" != "null" ]; then
-    five_h_remain=$(format_time_remaining "$five_h_reset")
-    seven_d_remain=$(format_time_remaining "$seven_d_reset")
-
-    # 小数値を整数に変換してから色・表示に使用（C2対策）
-    five_h_int=$(printf "%.0f" "$five_h_pct")
-    seven_d_int=$(printf "%.0f" "$seven_d_pct")
-    five_color=$(get_color "$five_h_int")
-    seven_color=$(get_color "$seven_d_int")
-
-    rate_part=$(printf "⚡${five_color}5h:%d%%→%s\033[0m ${seven_color}7d:%d%%→%s\033[0m" \
-      "$five_h_int" "$five_h_remain" "$seven_d_int" "$seven_d_remain")
-  else
-    rate_part="⚡---"
+    IFS="$_old_IFS"
+    unset _rate _old_IFS
   fi
+else
+  # stdinで使用率は取れたが、resets_atはAPIから補完
+  usage_data=$(get_cached_data) || usage_data=$(fetch_usage_data)
+  if [ -n "$usage_data" ]; then
+    _resets=$(echo "$usage_data" | jq -r '
+      [
+        (.five_hour.resets_at // ""),
+        (.seven_day.resets_at // "")
+      ] | join("\t")
+    ')
+    _old_IFS="$IFS"
+    IFS="$(printf '\t')"
+    read -r five_h_reset seven_d_reset << HDOC
+$_resets
+HDOC
+    IFS="$_old_IFS"
+    unset _resets _old_IFS
+  fi
+fi
+unset _have_stdin_rate
+
+if [ -n "$five_h_pct" ] && [ "$five_h_pct" != "null" ] && \
+   [ -n "$seven_d_pct" ] && [ "$seven_d_pct" != "null" ]; then
+  # 小数値を整数に変換してから色・表示に使用
+  five_h_int=$(printf "%.0f" "$five_h_pct")
+  seven_d_int=$(printf "%.0f" "$seven_d_pct")
+  five_color=$(get_color "$five_h_int")
+  seven_color=$(get_color "$seven_d_int")
+
+  # 残り時間が取れている場合は表示、なければパーセントのみ
+  if [ -n "$five_h_reset" ] && [ "$five_h_reset" != "null" ] && [ "$five_h_reset" != "" ]; then
+    five_h_remain=$(format_time_remaining "$five_h_reset")
+    five_h_display=$(printf "%d%%→%s" "$five_h_int" "$five_h_remain")
+  else
+    five_h_display=$(printf "%d%%" "$five_h_int")
+  fi
+
+  if [ -n "$seven_d_reset" ] && [ "$seven_d_reset" != "null" ] && [ "$seven_d_reset" != "" ]; then
+    seven_d_remain=$(format_time_remaining "$seven_d_reset")
+    seven_d_display=$(printf "%d%%→%s" "$seven_d_int" "$seven_d_remain")
+  else
+    seven_d_display=$(printf "%d%%" "$seven_d_int")
+  fi
+
+  rate_part=$(printf "⚡${five_color}5h:%s\033[0m ${seven_color}7d:%s\033[0m" \
+    "$five_h_display" "$seven_d_display")
 else
   rate_part="⚡---"
 fi
