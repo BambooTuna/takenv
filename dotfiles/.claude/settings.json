@@ -17,9 +17,12 @@
       "Write(**/secrets/**)",
       "mcp__playwright__browser"
     ],
-    "ask": ["Read(**/*token*)", "Bash(rm:*)", "Bash(rm -rf:*)"]
+    "ask": [
+      "Read(**/*token*)",
+      "Bash(rm:*)",
+      "Bash(rm -rf:*)"
+    ]
   },
-  "model": "opus[1m]",
   "statusLine": {
     "type": "command",
     "command": "sh ~/.claude/statusline-command.sh"
