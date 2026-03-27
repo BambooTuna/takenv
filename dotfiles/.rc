@@ -7,6 +7,11 @@ alias k="kubectl"
 alias t="terraform"
 alias p="pm2"
 
+# claude worktree (例: cw read, cw "fix bug #123")
+cw() {
+    claude --enable-auto-mode --worktree "$@"
+}
+
 alias ga="git add"
 alias gc="git commit -m"
 alias gp="git push origin"
