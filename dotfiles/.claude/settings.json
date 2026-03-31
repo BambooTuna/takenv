@@ -6,9 +6,13 @@
     "allow": [
       "Bash(pnpm format)",
       "Bash(pnpm test:ci)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(gog calendar:*)",
+      "Bash(gog gmail:*)"
     ],
     "deny": [
+      "Bash(gog gmail send:*)",
+      "Bash(gog gmail drafts send:*)",
       "Bash(sudo:*)",
       "Read(.env.*)",
       "Read(id_rsa)",
@@ -17,11 +21,7 @@
       "Write(**/secrets/**)",
       "mcp__playwright__browser"
     ],
-    "ask": [
-      "Read(**/*token*)",
-      "Bash(rm:*)",
-      "Bash(rm -rf:*)"
-    ]
+    "ask": ["Read(**/*token*)", "Bash(rm:*)", "Bash(rm -rf:*)"]
   },
   "statusLine": {
     "type": "command",
@@ -29,7 +29,18 @@
   },
   "enabledPlugins": {
     "commit-commands@claude-plugins-official": true,
-    "frontend-design@claude-code-plugins": true
+    "frontend-design@claude-code-plugins": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "codex@openai-codex": true,
+    "slack@claude-plugins-official": true
+  },
+  "extraKnownMarketplaces": {
+    "openai-codex": {
+      "source": {
+        "source": "github",
+        "repo": "openai/codex-plugin-cc"
+      }
+    }
   },
   "language": "日本語",
   "alwaysThinkingEnabled": true,

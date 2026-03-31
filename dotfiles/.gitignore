@@ -37,4 +37,8 @@
 !/.claude/
 !/.claude/**
 
+!/.gogcli/
+!/.gogcli/**
+
+
 !/.tmux.conf

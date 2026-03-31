@@ -19,6 +19,7 @@ teams
 telemetry
 backups
 sessions
+session-env
 
 statusline-cache.json
 mcp-needs-auth-cache.json

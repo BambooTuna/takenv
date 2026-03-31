@@ -10,13 +10,11 @@ brew 'zsh'
 ### To install useful key bindings and fuzzy completion:
 ### 1. $(brew --prefix)/opt/fzf/install
 ### 2. terminalフォルダの中身を反映させる
-brew 'fzf'
 
 brew 'git'
-brew 'mysql'
 
 cask "docker"
-cask "iterm2"
+cask "wezterm"
 
 
 ## 便利ツール
@@ -25,14 +23,12 @@ cask "slack"
 cask "discord"
 cask "amazon-music"
 cask "clipy"
-cask "toggl-track"
 brew 'tree'
+brew 'gogcli'
+brew 'tailscale'
 
 ### cat
 brew 'bat'
-
-### ls
-brew 'exa'
 
 ### jq
 brew 'jq'

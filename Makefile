@@ -25,6 +25,9 @@ setup:
 
 	# .aiのリンク作成
 	@test ! -e ~/.ai && ln -sf $(PWD)/dotfiles/.ai ~/.ai && echo "✓ ~/.ai のリンクを作成しました" || echo "✓ ~/.ai は既に存在します"
+
+	# .gogcliのリンク作成
+	@test ! -e ~/.gogcli && ln -sf $(PWD)/dotfiles/.gogcli ~/.gogcli && echo "✓ ~/.gogcli のリンクを作成しました" || echo "✓ ~/.gogcli は既に存在します"
 	
 	@echo ""
 	@echo "🎉 dotfilesのセットアップが完了しました！"
@@ -35,6 +38,8 @@ setup:
 	@echo "  ~/.config/nvim -> $(PWD)/dotfiles/.config/nvim"
 	@echo "  ~/.config/wezterm -> $(PWD)/dotfiles/.config/wezterm"
 	@echo "  ~/.claude -> $(PWD)/dotfiles/.claude"
+	@echo "  ~/.ai -> $(PWD)/dotfiles/.ai"
+	@echo "  ~/.gogcli -> $(PWD)/dotfiles/.gogcli"
 
 # リンクの削除
 clean:
@@ -45,6 +50,7 @@ clean:
 	@rm -rf ~/.config/nvim
 	@rm -rf ~/.config/wezterm
 	@rm -rf ~/.claude
+	@rm -rf ~/.gogcli
 	@echo "✓ dotfilesのリンクを削除しました"
 
 # GCEインスタンス用: Docker Composeセットアップ
