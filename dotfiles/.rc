@@ -8,8 +8,21 @@ alias t="terraform"
 alias p="pm2"
 
 # claude worktree (例: cw read, cw "fix bug #123")
+# tmux外から実行した場合は自動でtmuxセッションに入ってからclaude起動
 cw() {
-    claude --enable-auto-mode --worktree "$@"
+    if [ -n "$TMUX" ]; then
+        claude --enable-auto-mode --worktree "$@"
+    else
+        local base
+        base="${1:-$(basename "$PWD")}"
+        local name="$base"
+        local i=1
+        while tmux has-session -t "$name" 2>/dev/null; do
+            name="${base}-${i}"
+            i=$((i + 1))
+        done
+        tmux new-session -s "$name" -c "$PWD" \; send-keys "claude --enable-auto-mode --worktree $*" Enter
+    fi
 }
 
 alias ga="git add"

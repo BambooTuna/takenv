@@ -45,5 +45,6 @@
   },
   "language": "日本語",
   "alwaysThinkingEnabled": true,
-  "autoUpdatesChannel": "latest"
+  "autoUpdatesChannel": "latest",
+  "includeCoAuthoredBy": false
 }
