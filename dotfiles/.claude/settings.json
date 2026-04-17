@@ -39,7 +39,8 @@
     "typescript-lsp@claude-plugins-official": true,
     "codex@openai-codex": true,
     "slack@claude-plugins-official": true,
-    "pyright-lsp@claude-plugins-official": true
+    "pyright-lsp@claude-plugins-official": true,
+    "notion@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "openai-codex": {
@@ -59,5 +60,6 @@
   "alwaysThinkingEnabled": true,
   "effortLevel": "high",
   "advisorModel": "opus",
-  "autoUpdatesChannel": "latest"
+  "autoUpdatesChannel": "latest",
+  "skipAutoPermissionPrompt": true
 }
