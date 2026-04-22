@@ -78,3 +78,6 @@ case ":$PATH:" in
 esac
 # pnpm end
 export PATH="$HOME/.local/bin:$PATH"
+
+# Local-only secrets/overrides (not tracked by git)
+[[ -f "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"

@@ -72,7 +72,11 @@ get_cached_data() {
 
 # API からレート制限データを取得してキャッシュに保存
 fetch_usage_data() {
-  TOKEN=$(security find-generic-password -s "Claude Code-credentials" -a "$(whoami)" -w 2>/dev/null | jq -r '.claudeAiOauth.accessToken // empty')
+  if [ "$(uname -s)" = "Darwin" ]; then
+    TOKEN=$(security find-generic-password -s "Claude Code-credentials" -a "$(whoami)" -w 2>/dev/null | jq -r '.claudeAiOauth.accessToken // empty')
+  else
+    TOKEN=$(jq -r '.claudeAiOauth.accessToken // empty' "$HOME/.claude/.credentials.json" 2>/dev/null)
+  fi
   if [ -z "$TOKEN" ]; then
     return 1
   fi
