@@ -1,27 +1,39 @@
 #!/bin/sh
 # tmux copy-pipe-and-cancel から呼ばれ、選択内容を OSC 52 でクリップボードへ送る。
 #
-# なぜ必要か:
-#   tmux set-clipboard on による自発的 OSC 52 発火は mosh 経由ではクライアントに
-#   届かない。一方、pane に書き込まれた OSC 52 は tmux passthrough → mosh →
-#   端末 と中継される。そこで本スクリプトが pane tty に直接書き出すことで、
-#   mosh/ssh 共通で動作する経路に乗せる。
+# [DEBUG版] 診断のためログ出力中。動作確認後に非ログ版へ戻す。
 #
 # 呼ばれ方:
-#   bind -T copy-mode-vi y send -X copy-pipe-and-cancel '$HOME/.local/bin/osc52-yank'
-#   copy-pipe は stdin に選択内容を流し、stdout は pane に流れないため
-#   $TMUX_PANE から pane tty を解決して直接書き出す。
+#   bind -T copy-mode-vi y send -X copy-pipe-and-cancel '~/.local/bin/osc52-yank'
 
-b64=$(base64 | tr -d '\n')
+LOG=/tmp/osc52-yank.log
+
+input=$(cat)
+b64=$(printf '%s' "$input" | base64 | tr -d '\n')
 seq=$(printf '\033Ptmux;\033\033]52;c;%s\007\033\\' "$b64")
 
+{
+  echo "=== $(date) ==="
+  echo "TMUX_PANE=${TMUX_PANE:-(unset)}"
+  echo "TMUX=${TMUX:-(unset)}"
+  echo "HOME=${HOME:-(unset)}"
+  echo "input_len=${#input}"
+  echo "input_head=$(printf '%s' "$input" | head -c 60)"
+} >> "$LOG" 2>&1
+
 if [ -n "$TMUX_PANE" ]; then
-  pane_tty=$(tmux display-message -t "$TMUX_PANE" -p '#{pane_tty}' 2>/dev/null)
+  pane_tty=$(tmux display-message -t "$TMUX_PANE" -p '#{pane_tty}' 2>>"$LOG")
+  {
+    echo "pane_tty=${pane_tty:-(empty)}"
+    echo "pane_tty_writable=$([ -w "$pane_tty" ] && echo yes || echo no)"
+  } >> "$LOG" 2>&1
+
   if [ -n "$pane_tty" ] && [ -w "$pane_tty" ]; then
-    printf '%s' "$seq" > "$pane_tty"
+    printf '%s' "$seq" > "$pane_tty" 2>>"$LOG"
+    echo "branch=pane_tty_write rc=$?" >> "$LOG"
     exit 0
   fi
 fi
 
-# フォールバック: stdout へ（tmux外や直接シェル実行時）
 printf '%s' "$seq"
+echo "branch=stdout_fallback" >> "$LOG"
