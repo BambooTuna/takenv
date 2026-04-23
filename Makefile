@@ -28,7 +28,11 @@ setup:
 
 	# .gogcliのリンク作成
 	@test ! -e ~/.gogcli && ln -sf $(PWD)/dotfiles/.gogcli ~/.gogcli && echo "✓ ~/.gogcli のリンクを作成しました" || echo "✓ ~/.gogcli は既に存在します"
-	
+
+	# ~/.local/bin スクリプト群のリンク作成（tmux yank 用 osc52-yank 等）
+	@mkdir -p ~/.local/bin
+	@test ! -e ~/.local/bin/osc52-yank && ln -sf $(PWD)/dotfiles/bin/osc52-yank ~/.local/bin/osc52-yank && echo "✓ ~/.local/bin/osc52-yank のリンクを作成しました" || echo "✓ ~/.local/bin/osc52-yank は既に存在します"
+
 	@echo ""
 	@echo "🎉 dotfilesのセットアップが完了しました！"
 	@echo "作成されたリンク:"
@@ -40,6 +44,7 @@ setup:
 	@echo "  ~/.claude -> $(PWD)/dotfiles/.claude"
 	@echo "  ~/.ai -> $(PWD)/dotfiles/.ai"
 	@echo "  ~/.gogcli -> $(PWD)/dotfiles/.gogcli"
+	@echo "  ~/.local/bin/osc52-yank -> $(PWD)/dotfiles/bin/osc52-yank"
 
 # リンクの削除
 clean:
@@ -51,6 +56,7 @@ clean:
 	@rm -rf ~/.config/wezterm
 	@rm -rf ~/.claude
 	@rm -rf ~/.gogcli
+	@rm -f ~/.local/bin/osc52-yank
 	@echo "✓ dotfilesのリンクを削除しました"
 
 # GCEインスタンス用: Docker Composeセットアップ

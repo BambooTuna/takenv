@@ -43,5 +43,8 @@
 
 !/.tmux.conf
 
+!/bin/
+!/bin/**
+
 # x-ops スキルの個人ペルソナは公開しない
 /.claude/skills/x-ops/persona/
