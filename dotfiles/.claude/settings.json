@@ -68,5 +68,15 @@
   "autoUpdatesChannel": "latest",
   "skipWorkflowUsageWarning": true,
   "teammateMode": "tmux",
-  "skipAutoPermissionPrompt": true
+  "skipAutoPermissionPrompt": true,
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          { "type": "command", "command": "$HOME/.claude/hooks/log-prompt.sh" }
+        ]
+      }
+    ]
+  }
 }

@@ -29,3 +29,5 @@ jobs
 
 statusline-cache.json
 mcp-needs-auth-cache.json
+logs
+memory
