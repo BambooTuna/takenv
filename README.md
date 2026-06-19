@@ -44,10 +44,12 @@ make setup
 このコマンドで以下のシンボリックリンクが作成されます：
 - `~/.zshrc` → `dotfiles/.zshrc`
 - `~/.rc` → `dotfiles/.rc`
+- `~/.tmux.conf` → `dotfiles/.tmux.conf`
 - `~/.config/nvim` → `dotfiles/.config/nvim`
+- `~/.config/wezterm` → `dotfiles/.config/wezterm`
 - `~/.claude` → `dotfiles/.claude`
-- `~/.ai` → `dotfiles/.ai`
-
+- `~/.gogcli` → `dotfiles/.gogcli`
+- `~/.local/bin/osc52-yank` → `dotfiles/bin/osc52-yank`
 
 ### 3.2 ツールのインストール
 
@@ -60,10 +62,6 @@ asdf plugin add lazygit
 asdf install lazygit 0.55.1
 asdf set -u lazygit 0.55.1
 ```
-
----
-
-*以下は不要*
 
 ### 4. プラットフォーム別設定（Mac）
 
@@ -88,9 +86,12 @@ brew bundle --file=mac/brew/Brewfile
 - asdf、git、vi-mode プラグイン
 - zsh-syntax-highlighting、zsh-autosuggestions
 
+### tmux / WezTerm
+- WezTerm 起動時に tmux 自動アタッチ
+- mosh/SSH 越しでも OSC 52 でクリップボード連携（`bin/osc52-yank`）
+
 ### AI ツール設定
-- **Claude Code**: 日本語設定、通知機能、Node.js関連指示
-- **AI docs**: 開発言語別の詳細設定
+- **Claude Code**: 日本語設定、commands / skills / rules を同梱
 
 ### Git設定補助
 - SSH鍵設定手順
@@ -100,18 +101,22 @@ brew bundle --file=mac/brew/Brewfile
 
 ```
 takenv/
-├── README.md                 # このファイル
-├── Makefile                  # dotfiles一括設定
-├── dotfiles/                 # 設定ファイル群
+├── README.md                # このファイル
+├── Makefile                 # dotfiles一括設定
+├── dotfiles/                # 設定ファイル群
 │   ├── .zshrc               # zsh設定
 │   ├── .rc                  # 共通環境変数・alias
+│   ├── .tmux.conf           # tmux設定
 │   ├── .config/nvim/        # LazyVim設定
-│   ├── .claude/             # Claude Code設定
-│   └── .ai/docs/            # AI関連ドキュメント
+│   ├── .config/wezterm/     # WezTerm設定
+│   ├── .claude/             # Claude Code設定（commands/skills/rules）
+│   ├── .gogcli/             # gogcli 設定
+│   └── bin/                 # ヘルパースクリプト（osc52-yank 等）
 ├── mac/brew/                # Mac用設定
-│   └── Brewfile            # Homebrew設定
+│   └── Brewfile             # Homebrew設定
+├── devcontainer/            # 開発用 devcontainer 一式
 └── git/                     # Git設定手順
-    └── README.md           # SSH設定等の手順書
+    └── README.md            # SSH設定等の手順書
 ```
 
 ## 🔧 管理コマンド

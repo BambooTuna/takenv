@@ -23,9 +23,6 @@ setup:
 	# .claudeのリンク作成
 	@test ! -e ~/.claude && ln -sf $(PWD)/dotfiles/.claude ~/.claude && echo "✓ ~/.claude のリンクを作成しました" || echo "✓ ~/.claude は既に存在します"
 
-	# .aiのリンク作成
-	@test ! -e ~/.ai && ln -sf $(PWD)/dotfiles/.ai ~/.ai && echo "✓ ~/.ai のリンクを作成しました" || echo "✓ ~/.ai は既に存在します"
-
 	# .gogcliのリンク作成
 	@test ! -e ~/.gogcli && ln -sf $(PWD)/dotfiles/.gogcli ~/.gogcli && echo "✓ ~/.gogcli のリンクを作成しました" || echo "✓ ~/.gogcli は既に存在します"
 
@@ -42,7 +39,6 @@ setup:
 	@echo "  ~/.config/nvim -> $(PWD)/dotfiles/.config/nvim"
 	@echo "  ~/.config/wezterm -> $(PWD)/dotfiles/.config/wezterm"
 	@echo "  ~/.claude -> $(PWD)/dotfiles/.claude"
-	@echo "  ~/.ai -> $(PWD)/dotfiles/.ai"
 	@echo "  ~/.gogcli -> $(PWD)/dotfiles/.gogcli"
 	@echo "  ~/.local/bin/osc52-yank -> $(PWD)/dotfiles/bin/osc52-yank"
 

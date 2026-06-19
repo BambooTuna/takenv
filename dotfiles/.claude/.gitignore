@@ -20,6 +20,12 @@ telemetry
 backups
 sessions
 session-env
+daemon
+daemon.log
+image-cache
+jobs
+.last-cleanup
+.last-update-result.json
 
 statusline-cache.json
 mcp-needs-auth-cache.json
