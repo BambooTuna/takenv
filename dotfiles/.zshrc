@@ -39,7 +39,6 @@ alias rshell=exec $SHELL -l
 export ZSH="$HOME/.oh-my-zsh"
 ZSH_THEME="af-magic"
 plugins=(
-  asdf
   git
   vi-mode
   zsh-syntax-highlighting
@@ -58,13 +57,7 @@ export PATH="$PATH:$HOME/.local/share/nvim/lazy/fzf/bin"
 [ -f $HOME/.zshrc_`uname` ] && . $HOME/.zshrc_`uname`
 [ -f $HOME/.zshrc_local ] && . $HOME/.zshrc_local
 
-# asdf
-## required
-export PATH="${ASDF_DATA_DIR:-$HOME/.asdf}/bin:$PATH"
-export PATH="${ASDF_DATA_DIR:-$HOME/.asdf}/shims:$PATH"
-## append completions to fpath
-fpath=(${ASDF_DATA_DIR:-$HOME/.asdf}/completions $fpath)
-## initialise completions with ZSH's compinit
+# initialise completions with ZSH's compinit
 autoload -Uz compinit && compinit
 
 
@@ -78,6 +71,9 @@ case ":$PATH:" in
 esac
 # pnpm end
 export PATH="$HOME/.local/bin:$PATH"
+
+# mysql-client (keg-only)
+export PATH="/opt/homebrew/opt/mysql-client/bin:$PATH"
 
 # Local-only secrets/overrides (not tracked by git)
 [[ -f "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"

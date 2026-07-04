@@ -23,6 +23,7 @@ setup:
 	$(call link,$(HOME)/.tmux.conf,$(PWD)/dotfiles/.tmux.conf)
 	$(call link,$(HOME)/.config/nvim,$(PWD)/dotfiles/.config/nvim)
 	$(call link,$(HOME)/.config/wezterm,$(PWD)/dotfiles/.config/wezterm)
+	$(call link,$(HOME)/.config/karabiner,$(PWD)/dotfiles/.config/karabiner)
 	$(call link,$(HOME)/.config/herdr/config.toml,$(PWD)/dotfiles/.config/herdr/config.toml)
 	$(call link,$(HOME)/.claude,$(PWD)/dotfiles/.claude)
 	$(call link,$(HOME)/.gogcli,$(PWD)/dotfiles/.gogcli)
@@ -38,6 +39,7 @@ clean:
 	@rm -f ~/.tmux.conf
 	@rm -rf ~/.config/nvim
 	@rm -rf ~/.config/wezterm
+	@rm -rf ~/.config/karabiner
 	@rm -f ~/.config/herdr/config.toml
 	@rm -rf ~/.claude
 	@rm -rf ~/.gogcli
