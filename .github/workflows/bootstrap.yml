@@ -23,6 +23,9 @@ jobs:
     timeout-minutes: 60
     env:
       TAKENV_SKIP_CASKS: "1"
+      # mise の GitHub API アクセス（github/aqua バックエンド・attestation 検証）が
+      # ランナー共有 IP の匿名レート制限に当たるため認証を渡す
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - name: bootstrap
