@@ -30,5 +30,8 @@
 # x-ops スキルの個人ペルソナは公開しない
 /.claude/skills/x-ops/persona/
 
-# シークレットは絶対にコミットしない
-/xurl/.env
+# シークレットは絶対にコミットしない（ホワイトリストより後に置き、必ず優先させる）
+**/.env
+**/.env.*
+!**/.env.example
+**/.credentials.json
