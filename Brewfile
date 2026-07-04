@@ -33,8 +33,8 @@ brew 'mosh'
 brew 'terminal-notifier'
 brew 'gogcli'
 
-### メンテ終了済み。新規環境では eza への置き換えを検討
-brew 'exa'
+### ls 代替 (exa はメンテ終了で formula 削除済みのため eza を使用)
+brew 'eza'
 
 ### mise移行候補
 brew 'kotlin'
