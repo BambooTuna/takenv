@@ -1,7 +1,7 @@
 権限制限しています。
 
 ```
-$ gog auth add suzuki.takeo@bak.co.jp --services calendar,gmail,drive --drive-scope readonly
+$ gog auth add <your-email> --services calendar,gmail,drive --drive-scope readonly
 ```
 
 ## SSH 越しの VM で認証する場合
@@ -9,7 +9,7 @@ $ gog auth add suzuki.takeo@bak.co.jp --services calendar,gmail,drive --drive-sc
 ローカルコールバックサーバーが立てられない（リダイレクト先がブラウザを開いた端末の localhost になってしまう）ので、`--manual` を使ってブラウザレスフローで実行する。
 
 ```
-$ gog auth add suzuki.takeo@bak.co.jp --services calendar,gmail,drive --drive-scope readonly --manual
+$ gog auth add <your-email> --services calendar,gmail,drive --drive-scope readonly --manual
 ```
 
 1. VM に表示された URL を手元のブラウザに貼って認可

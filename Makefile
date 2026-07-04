@@ -1,76 +1,94 @@
-.PHONY: setup clean setup-docker-compose help
+.DEFAULT_GOAL := help
+.PHONY: link unlink doctor help
 
-# リンク作成: $(call link,リンク先,dotfiles内のソース)
-# 既にリンク済みならスキップ、無関係な既存ファイルがある場合は警告して退避を促す
-define link
-	@if [ -L "$(1)" ] && [ "$$(readlink "$(1)")" = "$(2)" ]; then \
-		echo "✓ $(1) はリンク済みです"; \
-	elif [ -e "$(1)" ] || [ -L "$(1)" ]; then \
-		echo "⚠️  $(1) に既存のファイルがあるためリンクを作成できません"; \
-		echo "    削除または退避（mv $(1) $(1).bak）してから make setup を再実行してください"; \
+# リンク定義: <リンク先>:<リポジトリ内の相対パス>
+# herdr/mise/codex はディレクトリにログ・認証情報等も置かれるため設定ファイルのみリンクする
+DOTFILES := \
+	$(HOME)/.zshrc:dotfiles/.zshrc \
+	$(HOME)/.rc:dotfiles/.rc \
+	$(HOME)/.config/nvim:dotfiles/.config/nvim \
+	$(HOME)/.config/wezterm:dotfiles/.config/wezterm \
+	$(HOME)/.config/karabiner:dotfiles/.config/karabiner \
+	$(HOME)/.config/herdr/config.toml:dotfiles/.config/herdr/config.toml \
+	$(HOME)/.config/mise/config.toml:dotfiles/.config/mise/config.toml \
+	$(HOME)/.claude:dotfiles/.claude \
+	$(HOME)/.codex/prompts:dotfiles/.codex/prompts \
+	$(HOME)/.gogcli:dotfiles/.gogcli \
+	$(HOME)/.local/bin/osc52-yank:dotfiles/bin/osc52-yank
+
+# 環境変数 TAKENV_LINK_BACKUP=1 で既存ファイルを .bak に退避してリンクを張る（bootstrap.sh が使用）
+link:
+	@mkdir -p ~/.config/herdr ~/.config/mise ~/.codex ~/.local/bin
+	@for pair in $(DOTFILES); do \
+		dst="$${pair%%:*}"; src="$(PWD)/$${pair##*:}"; \
+		if [ -L "$$dst" ] && [ "$$(readlink "$$dst")" = "$$src" ]; then \
+			echo "✓ $$dst はリンク済みです"; \
+		elif [ -e "$$dst" ] || [ -L "$$dst" ]; then \
+			if [ -n "$$TAKENV_LINK_BACKUP" ]; then \
+				mv "$$dst" "$$dst.bak" && ln -s "$$src" "$$dst" && echo "✓ $$dst を作成しました（既存は $$dst.bak に退避）"; \
+			else \
+				echo "⚠️  $$dst に既存のファイルがあります。退避して再実行してください: mv $$dst $$dst.bak"; \
+			fi; \
+		else \
+			ln -s "$$src" "$$dst" && echo "✓ $$dst を作成しました"; \
+		fi; \
+	done
+
+# シンボリックリンクのみ削除する（実ファイルには触れない）
+unlink:
+	@for pair in $(DOTFILES); do \
+		dst="$${pair%%:*}"; \
+		if [ -L "$$dst" ]; then rm "$$dst" && echo "✓ $$dst を削除しました"; fi; \
+	done
+
+# 環境の健全性チェック（CI でも使用。問題があれば非ゼロ終了）
+doctor:
+	@status=0; \
+	echo "== dotfiles リンク =="; \
+	for pair in $(DOTFILES); do \
+		dst="$${pair%%:*}"; src="$(PWD)/$${pair##*:}"; \
+		if [ -L "$$dst" ] && [ "$$(readlink "$$dst")" = "$$src" ]; then \
+			echo "  ✓ $$dst"; \
+		else \
+			echo "  ✗ $$dst が未リンクです"; status=1; \
+		fi; \
+	done; \
+	echo "== 必須コマンド =="; \
+	export PATH="$$HOME/.local/bin:$$PATH"; \
+	for cmd in zsh git mise nvim lazygit herdr claude codex; do \
+		if command -v "$$cmd" >/dev/null 2>&1 || mise which "$$cmd" >/dev/null 2>&1; then \
+			echo "  ✓ $$cmd"; \
+		else \
+			echo "  ✗ $$cmd が見つかりません"; status=1; \
+		fi; \
+	done; \
+	echo "== mise =="; \
+	if mise ls 2>/dev/null | grep -q missing; then \
+		echo "  ✗ 未インストールのツールがあります (mise install で導入):"; \
+		mise ls | grep missing | sed 's/^/    /'; status=1; \
 	else \
-		ln -s "$(2)" "$(1)" && echo "✓ $(1) のリンクを作成しました"; \
-	fi
-endef
+		echo "  ✓ 宣言済みツールはすべて導入済みです"; \
+	fi; \
+	if [ "$$(uname -s)" = "Darwin" ]; then \
+		echo "== Homebrew =="; \
+		if [ "$$TAKENV_SKIP_CASKS" = "1" ]; then \
+			echo "  - cask はスキップ対象のためチェックしません"; \
+		elif HOMEBREW_BUNDLE_NO_UPGRADE=1 brew bundle check --file=Brewfile >/dev/null 2>&1; then \
+			echo "  ✓ Brewfile はすべて導入済みです"; \
+		else \
+			echo "  ✗ Brewfile に未導入があります (brew bundle で導入):"; \
+			HOMEBREW_BUNDLE_NO_UPGRADE=1 brew bundle check --file=Brewfile --verbose 2>/dev/null | sed 's/^/    /' || true; status=1; \
+		fi; \
+	fi; \
+	exit $$status
 
-# dotfilesセットアップ
-# herdrディレクトリはログ・ソケットも置かれるためconfig.tomlのみファイル単位でリンク
-setup:
-	@echo "dotfilesのセットアップを開始します..."
-	@mkdir -p ~/.config ~/.config/herdr ~/.local/bin
-	$(call link,$(HOME)/.zshrc,$(PWD)/dotfiles/.zshrc)
-	$(call link,$(HOME)/.rc,$(PWD)/dotfiles/.rc)
-	$(call link,$(HOME)/.tmux.conf,$(PWD)/dotfiles/.tmux.conf)
-	$(call link,$(HOME)/.config/nvim,$(PWD)/dotfiles/.config/nvim)
-	$(call link,$(HOME)/.config/wezterm,$(PWD)/dotfiles/.config/wezterm)
-	$(call link,$(HOME)/.config/karabiner,$(PWD)/dotfiles/.config/karabiner)
-	$(call link,$(HOME)/.config/herdr/config.toml,$(PWD)/dotfiles/.config/herdr/config.toml)
-	$(call link,$(HOME)/.claude,$(PWD)/dotfiles/.claude)
-	$(call link,$(HOME)/.gogcli,$(PWD)/dotfiles/.gogcli)
-	$(call link,$(HOME)/.local/bin/osc52-yank,$(PWD)/dotfiles/bin/osc52-yank)
-	@echo ""
-	@echo "🎉 dotfilesのセットアップが完了しました（⚠️ がある場合は指示に従って再実行してください）"
-
-# リンクの削除
-clean:
-	@echo "dotfilesのリンクを削除します..."
-	@rm -f ~/.zshrc
-	@rm -f ~/.rc
-	@rm -f ~/.tmux.conf
-	@rm -rf ~/.config/nvim
-	@rm -rf ~/.config/wezterm
-	@rm -rf ~/.config/karabiner
-	@rm -f ~/.config/herdr/config.toml
-	@rm -rf ~/.claude
-	@rm -rf ~/.gogcli
-	@rm -f ~/.local/bin/osc52-yank
-	@echo "✓ dotfilesのリンクを削除しました"
-
-# GCEインスタンス用: Docker Composeセットアップ
-setup-docker-compose:
-	@echo "Docker Composeのセットアップを開始します..."
-	@mkdir -p ~/.docker/cli-plugins
-	@ARCH=$$(uname -m); \
-	case $$ARCH in \
-		x86_64) COMPOSE_ARCH="x86_64" ;; \
-		aarch64) COMPOSE_ARCH="aarch64" ;; \
-		*) echo "❌ サポートされていないアーキテクチャ: $$ARCH" && exit 1 ;; \
-	esac; \
-	echo "アーキテクチャ: $$COMPOSE_ARCH を検出しました"; \
-	curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$$COMPOSE_ARCH -o ~/.docker/cli-plugins/docker-compose
-	@chmod +x ~/.docker/cli-plugins/docker-compose
-	@echo "✓ Docker Composeをインストールしました"
-	@sudo mount -o exec,remount /home 2>/dev/null || true
-	@sudo usermod -aG docker $$USER
-	@echo "✓ ユーザーをdockerグループに追加しました"
-	@echo ""
-	@echo "⚠️  グループ変更を反映するため、一度ログアウトして再ログインしてください"
-	@echo "   または以下のコマンドを実行してください: newgrp docker"
-
-# ヘルプ
 help:
+	@echo "takenv — 開発環境構築リポジトリ"
+	@echo ""
+	@echo "  ./bootstrap.sh   ゼロ状態からの一括セットアップ（OS自動判別・冪等）"
+	@echo ""
 	@echo "利用可能なコマンド:"
-	@echo "  make setup                - dotfilesのシンボリックリンクを作成"
-	@echo "  make clean                - dotfilesのシンボリックリンクを削除"
-	@echo "  make setup-docker-compose - GCEインスタンスにDocker Composeをセットアップ"
-	@echo "  make help                 - このヘルプを表示"
+	@echo "  make link    - dotfiles のシンボリックリンクを作成"
+	@echo "  make unlink  - dotfiles のシンボリックリンクを削除（リンクのみ・実ファイルは残る）"
+	@echo "  make doctor  - 環境の健全性チェック"
+	@echo "  make help    - このヘルプを表示"

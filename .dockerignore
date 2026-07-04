@@ -1,0 +1,35 @@
+# devcontainer ビルドのコンテキストを軽くする
+# ~/.claude はこのリポジトリに symlink されているため、git 管理外の
+# ランタイムデータ（セッション履歴等・数GB）がリポジトリ内に存在する。
+# dotfiles/.claude/.gitignore の除外リストと同期すること。
+.git
+.idea
+dotfiles/.claude/settings.local.json
+dotfiles/.claude/ide
+dotfiles/.claude/file-history
+dotfiles/.claude/projects
+dotfiles/.claude/statsig
+dotfiles/.claude/todos
+dotfiles/.claude/shell-snapshots
+dotfiles/.claude/history.jsonl
+dotfiles/.claude/runtime
+dotfiles/.claude/debug
+dotfiles/.claude/plans
+dotfiles/.claude/plugins
+dotfiles/.claude/cache
+dotfiles/.claude/.credentials.json
+dotfiles/.claude/stats-cache.json
+dotfiles/.claude/paste-cache
+dotfiles/.claude/tasks
+dotfiles/.claude/teams
+dotfiles/.claude/telemetry
+dotfiles/.claude/backups
+dotfiles/.claude/sessions
+dotfiles/.claude/session-env
+dotfiles/.claude/daemon
+dotfiles/.claude/daemon.log
+dotfiles/.claude/image-cache
+dotfiles/.claude/jobs
+dotfiles/.claude/.last-cleanup
+dotfiles/.claude/.last-update-result.json
+dotfiles/.claude/statusline-cache.json

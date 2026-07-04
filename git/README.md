@@ -1,22 +1,22 @@
-## sTemplate
+# Git 設定
 
+## コミットテンプレート
 
 ```bash
-$ cp .gittemplate ~/.gittemplate
-$ git config --global commit.template ~/.gittemplate
+cp .gittemplate ~/.gittemplate
+git config --global commit.template ~/.gittemplate
 ```
-
 
 ## SSH
 
 1. 鍵を生成する
 
 ```bash
-$ cd ~/.ssh
-$ ssh-keygen -t rsa -b 4096 -C "bambootuna@gmail.com"
+cd ~/.ssh
+ssh-keygen -t ed25519 -C "<your-email>"
 ```
 
-2. 公開鍵をGithubにあげる
+2. 公開鍵を GitHub に登録する: https://github.com/settings/ssh/new
 
 3. エイリアスを作成する
 
@@ -27,8 +27,8 @@ Host github github.com
   User git
 ```
 
-3. 確認
+4. 確認
 
 ```bash
-$ ssh -T git@github.com
+ssh -T git@github.com
 ```

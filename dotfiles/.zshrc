@@ -1,10 +1,5 @@
 source $HOME/.rc
 
-# WezTermにtmux内かどうかを通知
-if [ -n "$TMUX" ]; then
-  printf "\033]1337;SetUserVar=%s=%s\007" "IS_TMUX" "$(echo -n true | base64)"
-fi
-
 # ヒストリの設定
 HISTFILE=~/.zsh_history
 HISTSIZE=50000

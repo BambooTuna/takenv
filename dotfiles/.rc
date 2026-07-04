@@ -8,21 +8,8 @@ alias t="terraform"
 alias p="pm2"
 
 # claude worktree (例: cw read, cw "fix bug #123")
-# tmux外から実行した場合は自動でtmuxセッションに入ってからclaude起動
 cw() {
-    if [ -n "$TMUX" ]; then
-        claude --enable-auto-mode --worktree "$@"
-    else
-        local base
-        base="${1:-$(basename "$PWD")}"
-        local name="$base"
-        local i=1
-        while tmux has-session -t "$name" 2>/dev/null; do
-            name="${base}-${i}"
-            i=$((i + 1))
-        done
-        tmux new-session -s "$name" -c "$PWD" \; send-keys "claude --enable-auto-mode --worktree $*" Enter
-    fi
+    claude --enable-auto-mode --worktree "$@"
 }
 
 alias ga="git add"
@@ -46,120 +33,6 @@ gwa() {
         # 新規ブランチの場合
         git worktree add "../$dir" -b "$branch"
     fi
-}
-
-# tmux ls (セッション一覧表示)
-alias tls='tmux ls'
-
-# tmux attach -t [name] (指定セッションにアタッチ)
-alias ta='tmux attach -t'
-
-# tmux new -s [name] (指定セッションを新規作成)
-alias tns='tmux new -s'
-
-# (指定セッションがあればリンクセッションでアタッチ、なければ新規作成する)
-ts() {
-    if [ -n "$TMUX" ]; then
-        tmux switch-client -t "$1" 2>/dev/null || tmux new-session -d -s "$1" \; switch-client -t "$1"
-    else
-        tmux attach-session -t "$1" 2>/dev/null || tmux new-session -s "$1"
-    fi
-}
-
-_codex_worktree_repo_root() {
-    local root
-    root="$(git rev-parse --show-toplevel)" || return 1
-    case "$root" in
-        */.codex/worktrees/*)
-            echo "${root%%/.codex/worktrees/*}"
-            ;;
-        *)
-            echo "$root"
-            ;;
-    esac
-}
-
-# codex worktree (例: cx 70)
-# .codex/worktrees/<number> を作って、その場所で tmux + codex を起動する
-cx() {
-    if [ -z "$1" ]; then
-        echo "Usage: cx <worktree-number>"
-        return 1
-    fi
-
-    local n="$1"
-    local root wt branch
-    root="$(_codex_worktree_repo_root)" || return 1
-    wt="$root/.codex/worktrees/$n"
-    branch="worktree-$n"
-
-    git -C "$root" worktree prune
-    mkdir -p "$root/.codex/worktrees"
-
-    if [ ! -f "$wt/.git" ]; then
-        if git -C "$root" show-ref --verify --quiet "refs/heads/$branch"; then
-            git -C "$root" worktree add "$wt" "$branch" || return 1
-        else
-            git -C "$root" worktree add -b "$branch" "$wt" HEAD || return 1
-        fi
-    fi
-
-    local name="codex-$n"
-    local base="$name"
-    local i=1
-    while tmux has-session -t "$name" 2>/dev/null; do
-        name="${base}-${i}"
-        i=$((i + 1))
-    done
-
-    if [ -n "$TMUX" ]; then
-        tmux new-window -n "$name" -c "$wt" codex
-    else
-        tmux new-session -s "$name" -c "$wt" codex
-    fi
-}
-
-# codex worktree cleanup (例: cxrm 70)
-# .codex/worktrees/<number> を git worktree remove し、対応する tmux session も閉じる
-cxrm() {
-    if [ -z "$1" ]; then
-        echo "Usage: cxrm <worktree-number>"
-        return 1
-    fi
-
-    local n="$1"
-    local root wt branch
-    root="$(_codex_worktree_repo_root)" || return 1
-    wt="$root/.codex/worktrees/$n"
-    branch="worktree-$n"
-
-    if [ -d "$wt" ] || [ -f "$wt/.git" ]; then
-        git -C "$root" worktree remove "$wt" || return 1
-    fi
-    git -C "$root" worktree prune
-
-    if git -C "$root" show-ref --verify --quiet "refs/heads/$branch"; then
-        git -C "$root" branch -d "$branch" || return 1
-    fi
-
-    local name="codex-$n"
-    local current_session=""
-    if [ -n "$TMUX" ]; then
-        current_session="$(tmux display-message -p '#S' 2>/dev/null || true)"
-    fi
-
-    local session
-    tmux list-sessions -F '#S' 2>/dev/null | while IFS= read -r session; do
-        case "$session" in
-            "$name"|"$name"-[0-9]*)
-                if [ "$session" = "$current_session" ]; then
-                    (sleep 0.1; tmux kill-session -t "$session") >/dev/null 2>&1 &
-                else
-                    tmux kill-session -t "$session"
-                fi
-                ;;
-        esac
-    done
 }
 
 # path
