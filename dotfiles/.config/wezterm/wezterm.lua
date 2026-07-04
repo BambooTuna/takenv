@@ -1,19 +1,11 @@
 local wezterm = require("wezterm")
 
-local function is_tmux(pane)
-	return pane:get_user_vars().IS_TMUX == "true"
-end
-
-local function tmux_or_native(tmux_keys, native_action)
-	return wezterm.action_callback(function(window, pane)
-		if is_tmux(pane) then
-			for _, key in ipairs(tmux_keys) do
-				window:perform_action(wezterm.action.SendKey(key), pane)
-			end
-		else
-			window:perform_action(native_action, pane)
-		end
-	end)
+-- herdr の prefix (Ctrl+a) に続けてキーを送る
+local function herdr(key)
+	return wezterm.action.Multiple({
+		wezterm.action.SendKey({ key = "a", mods = "CTRL" }),
+		wezterm.action.SendKey(key),
+	})
 end
 
 wezterm.on("trigger-nvim-with-scrollback", function(window, pane)
@@ -47,53 +39,52 @@ return {
 	-- color_scheme = "GruvboxDark (Gogh)",-- 自分の好きなテーマ探す https://wezfurlong.org/wezterm/colorschemes/index.html
 	hide_tab_bar_if_only_one_tab = true,
 	adjust_window_size_when_changing_font_size = false,
-	-- disable_default_key_bindings = true,
+	-- タブ・ペイン操作は herdr に任せるため、デフォルトキーバインドを全無効化。
+	-- WezTerm 層に必要な最小セットだけ再定義する。
+	disable_default_key_bindings = true,
 	keys = {
 		{ key = "c", mods = "SUPER", action = wezterm.action({ CopyTo = "Clipboard" }) },
 		{ key = "v", mods = "SUPER", action = wezterm.action({ PasteFrom = "Clipboard" }) },
+		{ key = "q", mods = "SUPER", action = wezterm.action.QuitApplication },
+		{ key = "=", mods = "SUPER", action = wezterm.action.IncreaseFontSize },
+		{ key = "-", mods = "SUPER", action = wezterm.action.DecreaseFontSize },
+		{ key = "0", mods = "SUPER", action = wezterm.action.ResetFontSize },
 		{ key = "E", mods = "ALT",   action = wezterm.action({ EmitEvent = "trigger-nvim-with-scrollback" }) },
-
-		-- Cmd+Shift+V → tmux: Ctrl-a " / native: SplitVertical
-		{ key = "V", mods = "SUPER", action = tmux_or_native(
-			{ { key = "a", mods = "CTRL" }, { key = '"' } },
-			wezterm.action.SplitVertical({ domain = "CurrentPaneDomain" })
-		) },
-		-- Cmd+Shift+H → tmux: Ctrl-a % / native: SplitHorizontal
-		{ key = "H", mods = "SUPER", action = tmux_or_native(
-			{ { key = "a", mods = "CTRL" }, { key = "%" } },
-			wezterm.action.SplitHorizontal({ domain = "CurrentPaneDomain" })
-		) },
-		-- Cmd+W → tmux: Ctrl-a x / native: CloseCurrentPane
-		{ key = "w", mods = "SUPER", action = tmux_or_native(
-			{ { key = "a", mods = "CTRL" }, { key = "x" } },
-			wezterm.action.CloseCurrentPane({ confirm = false })
-		) },
-
-		-- Cmd+h/j/k/l → tmux: Ctrl+h/j/k/l / native: ActivatePaneDirection
-		{ key = "h", mods = "SUPER", action = tmux_or_native(
-			{ { key = "h", mods = "CTRL" } },
-			wezterm.action.ActivatePaneDirection("Left")
-		) },
-		{ key = "l", mods = "SUPER", action = tmux_or_native(
-			{ { key = "l", mods = "CTRL" } },
-			wezterm.action.ActivatePaneDirection("Right")
-		) },
-		{ key = "k", mods = "SUPER", action = tmux_or_native(
-			{ { key = "k", mods = "CTRL" } },
-			wezterm.action.ActivatePaneDirection("Up")
-		) },
-		{ key = "j", mods = "SUPER", action = tmux_or_native(
-			{ { key = "j", mods = "CTRL" } },
-			wezterm.action.ActivatePaneDirection("Down")
-		) },
-
-		-- Cmd+Z → tmux: Ctrl-a z / native: TogglePaneZoomState
-		{ key = "z", mods = "SUPER", action = tmux_or_native(
-			{ { key = "a", mods = "CTRL" }, { key = "z" } },
-			wezterm.action.TogglePaneZoomState
-		) },
-
 		{ key = "F", mods = "SUPER", action = wezterm.action.QuickSelect },
+
+		-- herdr 操作（Cmd キーを prefix シーケンスに変換して送る）
+		-- Cmd+T: スペース内に新タブ
+		{ key = "t", mods = "SUPER", action = herdr({ key = "c" }) },
+		-- Cmd+[ / ]: スペース内のタブ移動
+		{ key = "[", mods = "SUPER", action = herdr({ key = "p" }) },
+		{ key = "]", mods = "SUPER", action = herdr({ key = "n" }) },
+		-- Cmd+Shift+[ / ]: スペース（プロジェクト）間の移動
+		-- macOSのキー解釈が環境依存のため、届きうる表現をすべて登録する
+		{ key = "[", mods = "SHIFT|SUPER", action = herdr({ key = "UpArrow" }) },
+		{ key = "{", mods = "SHIFT|SUPER", action = herdr({ key = "UpArrow" }) },
+		{ key = "{", mods = "SUPER", action = herdr({ key = "UpArrow" }) },
+		{ key = "phys:LeftBracket", mods = "SHIFT|SUPER", action = herdr({ key = "UpArrow" }) },
+		{ key = "]", mods = "SHIFT|SUPER", action = herdr({ key = "DownArrow" }) },
+		{ key = "}", mods = "SHIFT|SUPER", action = herdr({ key = "DownArrow" }) },
+		{ key = "}", mods = "SUPER", action = herdr({ key = "DownArrow" }) },
+		{ key = "phys:RightBracket", mods = "SHIFT|SUPER", action = herdr({ key = "DownArrow" }) },
+		-- Cmd+P: session navigator（j/k移動, Enter確定, b/w/i/dでエージェント状態フィルタ, /で検索）
+		{ key = "p", mods = "SUPER", action = herdr({ key = "g" }) },
+		-- Cmd+Shift+T: スペース追加（herdrは名前プロンプトなしで即作成。リネームは Ctrl+a Shift+W）
+		{ key = "T", mods = "SUPER", action = herdr({ key = "n", mods = "SHIFT" }) },
+		-- Cmd+Shift+G / O: 今のスペースから新規worktreeを作成 / 既存worktreeを開く
+		{ key = "G", mods = "SUPER", action = herdr({ key = "g", mods = "SHIFT" }) },
+		{ key = "O", mods = "SUPER", action = herdr({ key = "o", mods = "SHIFT" }) },
+		-- Cmd+Shift+V / H: ペイン分割（V: 上下 / H: 左右）
+		{ key = "V", mods = "SUPER", action = herdr({ key = "-" }) },
+		{ key = "H", mods = "SUPER", action = herdr({ key = "v" }) },
+		-- Cmd+W: ペインを閉じる
+		{ key = "w", mods = "SUPER", action = herdr({ key = "x" }) },
+		-- Cmd+h/j/k/l: スプリット間のフォーカス移動
+		{ key = "h", mods = "SUPER", action = herdr({ key = "h" }) },
+		{ key = "j", mods = "SUPER", action = herdr({ key = "j" }) },
+		{ key = "k", mods = "SUPER", action = herdr({ key = "k" }) },
+		{ key = "l", mods = "SUPER", action = herdr({ key = "l" }) },
 	},
 
 	use_fancy_tab_bar = false,

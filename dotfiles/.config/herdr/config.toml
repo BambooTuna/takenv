@@ -1,0 +1,22 @@
+[ui]
+agent_panel_sort = "spaces"
+# Cmd+T 相当で即タブを作る（リネームは prefix+shift+t）
+prompt_new_tab_name = false
+
+# tmux 時代の Ctrl-a 系の操作感を引き継ぐ
+# (c: 新規タブ / z: ズーム / x: 閉じる / h,j,k,l: ペイン移動 はデフォルトのまま prefix 配下)
+[keys]
+prefix = "ctrl+a"
+# スペース間移動（サイドバーの並びに合わせて上下）。wezterm 側から Cmd+Shift+[ / ] で発火する
+previous_workspace = "prefix+up"
+next_workspace = "prefix+down"
+
+# 既存 worktree を開く（デフォルト未割当）。wezterm 側から Cmd+Shift+O で発火する
+open_worktree = "prefix+shift+o"
+
+# navigate mode (prefix+w) は vim 風に j/k でスペース選択。
+# デフォルトで j/k を使っていたペイン上下移動は矢印キーに退避
+navigate_workspace_up = "k"
+navigate_workspace_down = "j"
+navigate_pane_up = "up"
+navigate_pane_down = "down"

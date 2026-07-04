@@ -1,46 +1,34 @@
 .PHONY: setup clean setup-docker-compose help
 
+# リンク作成: $(call link,リンク先,dotfiles内のソース)
+# 既にリンク済みならスキップ、無関係な既存ファイルがある場合は警告して退避を促す
+define link
+	@if [ -L "$(1)" ] && [ "$$(readlink "$(1)")" = "$(2)" ]; then \
+		echo "✓ $(1) はリンク済みです"; \
+	elif [ -e "$(1)" ] || [ -L "$(1)" ]; then \
+		echo "⚠️  $(1) に既存のファイルがあるためリンクを作成できません"; \
+		echo "    削除または退避（mv $(1) $(1).bak）してから make setup を再実行してください"; \
+	else \
+		ln -s "$(2)" "$(1)" && echo "✓ $(1) のリンクを作成しました"; \
+	fi
+endef
+
 # dotfilesセットアップ
+# herdrディレクトリはログ・ソケットも置かれるためconfig.tomlのみファイル単位でリンク
 setup:
 	@echo "dotfilesのセットアップを開始します..."
-	
-	# .zshrcのリンク作成
-	@test ! -e ~/.zshrc && ln -sf $(PWD)/dotfiles/.zshrc ~/.zshrc && echo "✓ ~/.zshrc のリンクを作成しました" || echo "✓ ~/.zshrc は既に存在します"
-	
-	# .rcのリンク作成
-	@test ! -e ~/.rc && ln -sf $(PWD)/dotfiles/.rc ~/.rc && echo "✓ ~/.rc のリンクを作成しました" || echo "✓ ~/.rc は既に存在します"
-
-	# .tmux.confのリンク作成
-	@test ! -e ~/.tmux.conf && ln -sf $(PWD)/dotfiles/.tmux.conf ~/.tmux.conf && echo "✓ ~/.tmux.conf のリンクを作成しました" || echo "✓ ~/.tmux.conf は既に存在します"
-
-	# .config/nvimのリンク作成
-	@mkdir -p ~/.config
-	@test ! -e ~/.config/nvim && ln -sf $(PWD)/dotfiles/.config/nvim ~/.config/nvim && echo "✓ ~/.config/nvim のリンクを作成しました" || echo "✓ ~/.config/nvim は既に存在します"
-
-	# .config/weztermのリンク作成
-	@test ! -e ~/.config/wezterm && ln -sf $(PWD)/dotfiles/.config/wezterm ~/.config/wezterm && echo "✓ ~/.config/wezterm のリンクを作成しました" || echo "✓ ~/.config/wezterm は既に存在します"
-	
-	# .claudeのリンク作成
-	@test ! -e ~/.claude && ln -sf $(PWD)/dotfiles/.claude ~/.claude && echo "✓ ~/.claude のリンクを作成しました" || echo "✓ ~/.claude は既に存在します"
-
-	# .gogcliのリンク作成
-	@test ! -e ~/.gogcli && ln -sf $(PWD)/dotfiles/.gogcli ~/.gogcli && echo "✓ ~/.gogcli のリンクを作成しました" || echo "✓ ~/.gogcli は既に存在します"
-
-	# ~/.local/bin スクリプト群のリンク作成（tmux yank 用 osc52-yank 等）
-	@mkdir -p ~/.local/bin
-	@test ! -e ~/.local/bin/osc52-yank && ln -sf $(PWD)/dotfiles/bin/osc52-yank ~/.local/bin/osc52-yank && echo "✓ ~/.local/bin/osc52-yank のリンクを作成しました" || echo "✓ ~/.local/bin/osc52-yank は既に存在します"
-
+	@mkdir -p ~/.config ~/.config/herdr ~/.local/bin
+	$(call link,$(HOME)/.zshrc,$(PWD)/dotfiles/.zshrc)
+	$(call link,$(HOME)/.rc,$(PWD)/dotfiles/.rc)
+	$(call link,$(HOME)/.tmux.conf,$(PWD)/dotfiles/.tmux.conf)
+	$(call link,$(HOME)/.config/nvim,$(PWD)/dotfiles/.config/nvim)
+	$(call link,$(HOME)/.config/wezterm,$(PWD)/dotfiles/.config/wezterm)
+	$(call link,$(HOME)/.config/herdr/config.toml,$(PWD)/dotfiles/.config/herdr/config.toml)
+	$(call link,$(HOME)/.claude,$(PWD)/dotfiles/.claude)
+	$(call link,$(HOME)/.gogcli,$(PWD)/dotfiles/.gogcli)
+	$(call link,$(HOME)/.local/bin/osc52-yank,$(PWD)/dotfiles/bin/osc52-yank)
 	@echo ""
-	@echo "🎉 dotfilesのセットアップが完了しました！"
-	@echo "作成されたリンク:"
-	@echo "  ~/.zshrc -> $(PWD)/dotfiles/.zshrc"
-	@echo "  ~/.rc -> $(PWD)/dotfiles/.rc"
-	@echo "  ~/.tmux.conf -> $(PWD)/dotfiles/.tmux.conf"
-	@echo "  ~/.config/nvim -> $(PWD)/dotfiles/.config/nvim"
-	@echo "  ~/.config/wezterm -> $(PWD)/dotfiles/.config/wezterm"
-	@echo "  ~/.claude -> $(PWD)/dotfiles/.claude"
-	@echo "  ~/.gogcli -> $(PWD)/dotfiles/.gogcli"
-	@echo "  ~/.local/bin/osc52-yank -> $(PWD)/dotfiles/bin/osc52-yank"
+	@echo "🎉 dotfilesのセットアップが完了しました（⚠️ がある場合は指示に従って再実行してください）"
 
 # リンクの削除
 clean:
@@ -50,6 +38,7 @@ clean:
 	@rm -f ~/.tmux.conf
 	@rm -rf ~/.config/nvim
 	@rm -rf ~/.config/wezterm
+	@rm -f ~/.config/herdr/config.toml
 	@rm -rf ~/.claude
 	@rm -rf ~/.gogcli
 	@rm -f ~/.local/bin/osc52-yank
