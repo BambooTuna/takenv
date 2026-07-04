@@ -31,3 +31,10 @@ statusline-cache.json
 mcp-needs-auth-cache.json
 logs
 memory
+
+# マシン固有の自動生成物（Claude Codeが再生成する）
+chrome
+
+# 社内情報（実名・役割分担）を含むためpublicリポジトリには載せない
+commands/evening-briefing.md
+commands/evening-briefing/
