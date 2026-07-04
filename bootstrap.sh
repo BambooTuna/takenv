@@ -6,7 +6,9 @@
 # 冪等: 何度実行しても安全。導入済みのステップはスキップされる。
 #
 # 環境変数:
-#   TAKENV_SKIP_CASKS=1   GUIアプリ(cask)を入れない（CI・ヘッドレス用）
+#   TAKENV_SKIP_CASKS=1     GUIアプリ(cask)を入れない（CI・ヘッドレス用）
+#   TAKENV_IN_CONTAINER=1   コンテナ内として扱い Docker は CLI のみ導入
+#                           （docker build の RUN 中は /.dockerenv が無いため明示が必要）
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -91,7 +93,7 @@ setup_linux() {
         | $SUDO tee /etc/apt/sources.list.d/docker.list >/dev/null
     fi
     $SUDO apt-get update -y
-    if [ -f /.dockerenv ]; then
+    if [ -f /.dockerenv ] || [ "${TAKENV_IN_CONTAINER:-0}" = "1" ]; then
       # コンテナ内はホストの docker.sock を使うため CLI のみ
       $SUDO apt-get install -y docker-ce-cli docker-compose-plugin
     else

@@ -18,6 +18,13 @@ docker exec -it takenv-dev zsh
 
 セッションの永続化・分割は herdr（`mise install` で導入済み）を使います。
 
+## コンテナ内から Docker を使う
+
+Docker Desktop (Mac/Windows) の docker.sock は `root:root, 0755` でグループ書き込みビットが無いため、
+グループ参加ではアクセス権を得られません。コンテナ内では `sudo docker ...` を使ってください
+（devuser は NOPASSWD sudo 可）。ネイティブ Linux ホスト（`0660 root:docker`）では
+entrypoint が GID を合わせるため sudo なしで動きます。
+
 ## 管理コマンド
 
 ```bash

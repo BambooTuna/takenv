@@ -29,10 +29,11 @@ RUN if getent passwd ${USER_UID} > /dev/null; then \
 
 USER devuser
 
-# Copy repository and bootstrap (GUI cask はコンテナに存在しないためスキップ)
+# Copy repository and bootstrap
+# TAKENV_IN_CONTAINER: build 中は /.dockerenv が無いため明示（Docker は CLI のみ導入）
 COPY --chown=devuser:devuser . /home/devuser/takenv
 WORKDIR /home/devuser/takenv
-RUN TAKENV_SKIP_CASKS=1 ./bootstrap.sh
+RUN TAKENV_SKIP_CASKS=1 TAKENV_IN_CONTAINER=1 ./bootstrap.sh
 
 # Copy and setup entrypoint
 COPY --chown=devuser:devuser devcontainer/entrypoint.sh /usr/local/bin/entrypoint.sh
