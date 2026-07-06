@@ -6,6 +6,7 @@
 DOTFILES := \
 	$(HOME)/.zshrc:dotfiles/.zshrc \
 	$(HOME)/.rc:dotfiles/.rc \
+	$(HOME)/.tmux.conf:dotfiles/.tmux.conf \
 	$(HOME)/.config/nvim:dotfiles/.config/nvim \
 	$(HOME)/.config/wezterm:dotfiles/.config/wezterm \
 	$(HOME)/.config/karabiner:dotfiles/.config/karabiner \

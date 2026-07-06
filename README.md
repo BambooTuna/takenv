@@ -65,7 +65,8 @@ push / PR のたびに GitHub Actions がゼロ状態の macOS / Ubuntu runner �
 
 - **zsh**: oh-my-zsh + af-magic、履歴 50,000 件・重複削除・時間記録、`v`=nvim などの alias
 - **Neovim**: LazyVim ベース、Claude Code 統合、Copilot、LazyGit 統合
-- **WezTerm + herdr**: ターミナルマルチプレクサは herdr（tmux は廃止）。Cmd キー操作を herdr の prefix に変換するキーバインド
+- **WezTerm + herdr**: ターミナルマルチプレクサは herdr がメイン。Cmd キー操作を herdr の prefix に変換するキーバインド
+- **tmux**: mise でグローバル導入。`.tmux.conf` と `tls` / `ta` / `tns` / `ts` エイリアスを同梱
 - **Karabiner-Elements**: Caps Lock → Ctrl、右 Cmd → 英数、右 Option → かな
 - **AI ツール**: Claude Code（日本語設定・commands / skills / rules 同梱）、Codex（prompts 同梱）
 - **SSH 越しのクリップボード**: OSC 52 対応の `bin/osc52-yank`

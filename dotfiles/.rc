@@ -12,6 +12,24 @@ cw() {
     claude --enable-auto-mode --worktree "$@"
 }
 
+# tmux ls (セッション一覧表示)
+alias tls='tmux ls'
+
+# tmux attach -t [name] (指定セッションにアタッチ)
+alias ta='tmux attach -t'
+
+# tmux new -s [name] (指定セッションを新規作成)
+alias tns='tmux new -s'
+
+# (指定セッションがあればリンクセッションでアタッチ、なければ新規作成する)
+ts() {
+    if [ -n "$TMUX" ]; then
+        tmux switch-client -t "$1" 2>/dev/null || tmux new-session -d -s "$1" \; switch-client -t "$1"
+    else
+        tmux attach-session -t "$1" 2>/dev/null || tmux new-session -s "$1"
+    fi
+}
+
 alias ga="git add"
 alias gc="git commit -m"
 alias gp="git push origin"
