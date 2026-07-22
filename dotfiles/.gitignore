@@ -28,6 +28,17 @@
 # x-ops スキルの個人ペルソナは公開しない
 /.claude/skills/x-ops/persona/
 
+# Claude Code デーモンのランタイム状態（実行時に生成される）
+/.claude/daemon/
+/.claude/daemon.*
+/.claude/daemon-auth-*
+
+# hyperframes 系スキル（外部配布物のためリポジトリ管理外）
+/.claude/skills/hyperframes/
+/.claude/skills/hyperframes-*/
+/.claude/skills/media-use/
+/.claude/skills/product-launch-video/
+
 # シークレットは絶対にコミットしない（ホワイトリストより後に置き、必ず優先させる）
 **/.env
 **/.env.*

@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: link unlink doctor help
+.PHONY: link unlink doctor tailscale-up help
 
 # リンク定義: <リンク先>:<リポジトリ内の相対パス>
 # herdr/mise/codex はディレクトリにログ・認証情報等も置かれるため設定ファイルのみリンクする
@@ -83,6 +83,19 @@ doctor:
 	fi; \
 	exit $$status
 
+# Tailscale に参加する（Linux は SSH 受付も有効化し、Mac から herdr --remote で接続できる）
+# 認証はブラウザで対話的に行うため bootstrap には含めない
+tailscale-up:
+	@if ! command -v tailscale >/dev/null 2>&1; then \
+		echo "✗ tailscale が見つかりません。先に ./bootstrap.sh を実行してください"; exit 1; \
+	fi
+	@if [ "$$(uname -s)" = "Linux" ]; then \
+		sudo tailscale up --ssh; \
+	else \
+		tailscale up; \
+	fi
+	@tailscale status
+
 help:
 	@echo "takenv — 開発環境構築リポジトリ"
 	@echo ""
@@ -92,4 +105,5 @@ help:
 	@echo "  make link    - dotfiles のシンボリックリンクを作成"
 	@echo "  make unlink  - dotfiles のシンボリックリンクを削除（リンクのみ・実ファイルは残る）"
 	@echo "  make doctor  - 環境の健全性チェック"
+	@echo "  make tailscale-up - Tailscale に参加（Linux は --ssh 付きで SSH 受付も有効化）"
 	@echo "  make help    - このヘルプを表示"

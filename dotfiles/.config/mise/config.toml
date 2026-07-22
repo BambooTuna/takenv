@@ -18,7 +18,9 @@ neovim = "0.11.4"
 tmux = "3.7b"
 lazygit = "0.55.1"
 ripgrep = "14.1.1"
-"github:ogulcancelik/herdr" = "latest"
+# latest だと Mac / Linux 間でサーバー・クライアントのバージョンがずれて
+# --remote 接続時に相手サーバーの停止・再導入が走るため固定する
+"github:ogulcancelik/herdr" = "0.7.4"
 
 # クラウド・インフラ
 awscli = "2.13.37"

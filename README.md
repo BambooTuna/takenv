@@ -22,7 +22,7 @@ git clone https://github.com/BambooTuna/takenv.git && cd takenv
 `bootstrap.sh` はこの三層を OS を判別して順に適用します。
 
 - **Mac**: Homebrew 導入 → `brew bundle` → oh-my-zsh → dotfiles リンク → `mise install` → Claude Code
-- **Ubuntu**: apt（zsh / build ツール / DB クライアント）→ mise 導入 → oh-my-zsh → dotfiles リンク → `mise install` → Claude Code → Docker CE → ログインシェルを zsh 化
+- **Ubuntu**: apt（zsh / build ツール / DB クライアント）→ mise 導入 → oh-my-zsh → dotfiles リンク → `mise install` → Claude Code → Docker CE → Tailscale → ログインシェルを zsh 化
 
 Ubuntu では GUI 層（cask）を除いた CLI 環境（zsh + mise + herdr + nvim + Claude Code / Codex）が再現されます。
 
@@ -32,17 +32,20 @@ Ubuntu では GUI 層（cask）を除いた CLI 環境（zsh + mise + herdr + nv
 
 1. シェルを開き直す: `exec zsh -l`
 2. SSH 鍵の作成と GitHub 登録: [git/README.md](./git/README.md)
-3. **Mac のみ** Karabiner-Elements の権限承認（初回のみ）
+3. Tailscale に参加: `make tailscale-up`（Ubuntu は `--ssh` 付きで SSH 受付も有効化）
+   - Mac から `herdr --remote <user>@<ホスト名>` でリモート接続できるようになる
+4. **Mac のみ** Karabiner-Elements の権限承認（初回のみ）
    - システム設定 > 一般 > ログイン項目と機能拡張 > ドライバ機能拡張 を有効化
    - システム設定 > プライバシーとセキュリティ > 入力監視 を許可
-4. **Mac のみ** cask が無い/機能しないアプリ: LINE (App Store), tldv (https://tldv.io), Amazon Music (https://music.amazon.co.jp)
+5. **Mac のみ** cask が無い/機能しないアプリ: LINE (App Store), tldv (https://tldv.io), Amazon Music (https://music.amazon.co.jp)
 
 ## 運用コマンド
 
 ```bash
-make doctor   # 環境の健全性チェック（リンク・必須コマンド・mise・Brewfile）
-make link     # dotfiles のシンボリックリンクを作成
-make unlink   # リンクを削除（リンクのみ・実ファイルには触れない）
+make doctor        # 環境の健全性チェック（リンク・必須コマンド・mise・Brewfile）
+make link          # dotfiles のシンボリックリンクを作成
+make unlink        # リンクを削除（リンクのみ・実ファイルには触れない）
+make tailscale-up  # Tailscale に参加（Linux は --ssh 付きで SSH 受付も有効化）
 ```
 
 ### 更新フロー

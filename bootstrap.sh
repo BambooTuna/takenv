@@ -103,6 +103,14 @@ setup_linux() {
     fi
   fi
 
+  log "Tailscale"
+  if command -v tailscale >/dev/null 2>&1; then
+    ok "インストール済み"
+  else
+    # 公式スクリプトが apt repo 登録〜 systemd サービス有効化まで冪等に行う
+    curl -fsSL https://tailscale.com/install.sh | sh
+  fi
+
   log "ログインシェルを zsh に変更"
   if [ "$(basename "${SHELL:-}")" = "zsh" ]; then
     ok "設定済み"
@@ -163,6 +171,12 @@ print_manual_steps() {
   1. シェルを開き直す（exec zsh -l）
   2. SSH 鍵の作成と GitHub 登録: git/README.md 参照
 EOS
+  if [ "$OS" = "Linux" ]; then
+    cat <<'EOS'
+  3. Tailscale に参加（SSH 受付も有効化）: make tailscale-up
+     → Mac から herdr --remote <user>@<このホスト名> で接続できる
+EOS
+  fi
   if [ "$OS" = "Darwin" ]; then
     cat <<'EOS'
   3. Karabiner-Elements の権限承認（初回のみ）
