@@ -7,6 +7,17 @@ alias k="kubectl"
 alias t="terraform"
 alias p="pm2"
 
+# claude 起動時に共通システムプロンプトを追記する
+# (サブコマンドは --append-system-prompt-file を受け付けないため素通しする)
+claude() {
+    case "$1" in
+        agents|auth|auto-mode|doctor|install|mcp|plugin|plugins|project|setup-token|ultrareview|update|upgrade)
+            command claude "$@" ;;
+        *)
+            command claude --append-system-prompt-file "$HOME/.claude/append-system-prompt.txt" "$@" ;;
+    esac
+}
+
 # claude worktree (例: cw read, cw "fix bug #123")
 cw() {
     claude --enable-auto-mode --worktree "$@"
