@@ -35,3 +35,9 @@ tokei = "12.1.2"
 
 # AIエージェント（Claude Code は bootstrap.sh で公式インストーラから導入）
 "npm:@openai/codex" = "latest"
+"github:router-for-me/CLIProxyAPI" = "7.2.94"
+btop = "latest"
+github-cli = "latest"
+# ヘッドレスブラウザ (スクショ・DOM解析・クリック等の Web 自動化)
+# chromium 本体は `mise x -- playwright install chromium` で ~/.cache/ms-playwright に導入
+"npm:playwright" = "latest"

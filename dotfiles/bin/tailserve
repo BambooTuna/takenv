@@ -1,0 +1,239 @@
+#!/usr/bin/env python3
+"""Tailscale 経由でだけファイルをやり取りする簡易サーバー(serve / dropserve 共通実装)。
+
+呼ばれたコマンド名で動作が切り替わる(Makefile で両名をこのファイルにリンクする):
+  serve [path] [port]   path(省略時 cwd)を配る。ファイル指定時は URL をそこまで案内。既定 8000 番
+  dropserve [port]      ブラウザからのドロップを ~/.dropserve に保存する。既定 8090 番
+
+共通仕様:
+  - LAN や素の Wi-Fi から届かないよう Tailscale IF に bind し、URL は MagicDNS ホスト名で表示
+  - ポートが使用中なら +1 しながら空きを探す
+  - セキュリティとポート占有のため 1 時間で自動終了する
+  - dropserve の保存先は環境変数 DROPSERVE_DIR で上書き可
+"""
+import errno
+import functools
+import json
+import os
+import subprocess
+import sys
+import threading
+import urllib.parse
+from http.server import BaseHTTPRequestHandler, SimpleHTTPRequestHandler, ThreadingHTTPServer
+from email.parser import BytesParser
+from email import policy
+
+INBOX = os.environ.get("DROPSERVE_DIR") or os.path.expanduser("~/.dropserve")
+MAX_BYTES = 500 << 20  # 500MB
+LIFETIME_SEC = 3600
+
+PAGE = """<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dropserve</title>
+<style>
+  body { font-family: system-ui; max-width: 640px; margin: 40px auto; padding: 0 16px; background: #1e1e2e; color: #cdd6f4; }
+  #zone { border: 2px dashed #585b70; border-radius: 12px; padding: 60px 20px; text-align: center; font-size: 18px; transition: .15s; }
+  #zone.over { border-color: #89b4fa; background: #313244; }
+  .item { margin: 12px 0; padding: 10px 14px; background: #313244; border-radius: 8px; display: flex; align-items: center; gap: 10px; }
+  .item code { flex: 1; word-break: break-all; font-size: 13px; }
+  .item button { background: #89b4fa; color: #1e1e2e; border: 0; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-weight: 600; }
+  .err { color: #f38ba8; }
+</style>
+<div id="zone">ここにファイルをドロップ<br><small>またはクリックして選択</small></div>
+<input type="file" id="picker" multiple hidden>
+<div id="log"></div>
+<script>
+const zone = document.getElementById('zone'), picker = document.getElementById('picker'), log = document.getElementById('log');
+zone.onclick = () => picker.click();
+picker.onchange = () => upload(picker.files);
+zone.ondragover = e => { e.preventDefault(); zone.classList.add('over'); };
+zone.ondragleave = () => zone.classList.remove('over');
+zone.ondrop = e => { e.preventDefault(); zone.classList.remove('over'); upload(e.dataTransfer.files); };
+function copyText(text) {
+  // navigator.clipboard は HTTPS/localhost 限定なので、平文 HTTP では textarea 方式で書き込む
+  if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  const ok = document.execCommand('copy');
+  ta.remove();
+  return ok ? Promise.resolve() : Promise.reject(new Error('copy failed'));
+}
+async function upload(files) {
+  for (const f of files) {
+    const fd = new FormData();
+    fd.append('file', f);
+    const div = document.createElement('div');
+    div.className = 'item';
+    div.textContent = f.name + ' 送信中…';
+    log.prepend(div);
+    try {
+      const r = await fetch('/upload', { method: 'POST', body: fd });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || r.status);
+      div.innerHTML = '<code>' + j.path + '</code><button>コピー</button>';
+      div.querySelector('button').onclick = ev => {
+        copyText(j.path).then(
+          () => { ev.target.textContent = '✓'; },
+          () => { ev.target.textContent = '失敗'; },
+        );
+        setTimeout(() => ev.target.textContent = 'コピー', 1200);
+      };
+    } catch (err) {
+      div.innerHTML = '<span class="err">' + f.name + ' 失敗: ' + err.message + '</span>';
+    }
+  }
+}
+</script>
+"""
+
+
+def tailscale_addr():
+    """bind は Tailscale の IPv4、表示 URL は MagicDNS ホスト名を優先。"""
+    try:
+        ip = subprocess.run(
+            ["tailscale", "ip", "-4"], capture_output=True, text=True, timeout=5
+        ).stdout.split()
+        ip = ip[0] if ip else ""
+    except OSError:
+        ip = ""
+    if not ip:
+        sys.exit("tailscale IP を取得できません。tailscale が起動しているか確認してください。")
+    host = ""
+    try:
+        status = subprocess.run(
+            ["tailscale", "status", "--self", "--json"],
+            capture_output=True, text=True, timeout=5,
+        ).stdout
+        host = json.loads(status)["Self"]["DNSName"].rstrip(".")
+    except (OSError, KeyError, ValueError):
+        pass
+    return ip, host or ip
+
+
+def bind_with_fallback(handler, ip, port, attempts=20):
+    """指定ポートが使用中なら +1 しながら空きを探す。"""
+    for p in range(port, port + attempts):
+        try:
+            return ThreadingHTTPServer((ip, p), handler), p
+        except OSError as e:
+            if e.errno != errno.EADDRINUSE:
+                raise
+            print(f"port {p} は使用中、{p + 1} を試します", file=sys.stderr)
+    sys.exit(f"error: port {port}〜{port + attempts - 1} すべて使用中")
+
+
+def run(handler, port, url_path=""):
+    """bind →自動終了タイマー→ URL 表示→サーブ、の共通処理。"""
+    ip, host = tailscale_addr()
+    srv, port = bind_with_fallback(handler, ip, port)
+    timer = threading.Timer(LIFETIME_SEC, srv.shutdown)
+    timer.daemon = True
+    timer.start()
+    # パイプ/リダイレクト時もすぐ URL が見えるよう flush する
+    print(f"→ http://{host}:{port}/{url_path}  ({LIFETIME_SEC // 60}分後に自動終了)", flush=True)
+    try:
+        srv.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    print("自動終了しました" if not timer.is_alive() else "終了しました")
+
+
+# --- serve: ファイル/ディレクトリを配る ---
+
+class ServeHandler(SimpleHTTPRequestHandler):
+    def log_message(self, fmt, *args):
+        sys.stderr.write("%s %s\n" % (self.address_string(), fmt % args))
+
+
+def run_serve(argv):
+    target = os.path.expanduser(argv[0]) if argv else "."
+    port = int(argv[1]) if len(argv) > 1 else 8000
+    if os.path.isfile(target):
+        directory, url_path = os.path.dirname(target) or ".", urllib.parse.quote(os.path.basename(target))
+    elif os.path.isdir(target):
+        directory, url_path = target, ""
+    else:
+        sys.exit(f"not found: {target}")
+    handler = functools.partial(ServeHandler, directory=directory)
+    run(handler, port, url_path)
+
+
+# --- dropserve: ブラウザからのドロップを保存する ---
+
+def unique_path(name):
+    base = os.path.basename(name.replace("\\", "/")) or "unnamed"
+    stem, ext = os.path.splitext(base)
+    path = os.path.join(INBOX, base)
+    n = 1
+    while os.path.exists(path):
+        path = os.path.join(INBOX, f"{stem}_{n}{ext}")
+        n += 1
+    return path
+
+
+class DropHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        body = PAGE.encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_POST(self):
+        if self.path != "/upload":
+            return self.reply(404, {"error": "not found"})
+        length = int(self.headers.get("Content-Length") or 0)
+        if length <= 0 or length > MAX_BYTES:
+            return self.reply(413, {"error": f"size limit {MAX_BYTES >> 20}MB"})
+        ctype = self.headers.get("Content-Type", "")
+        if "multipart/form-data" not in ctype:
+            return self.reply(400, {"error": "multipart/form-data expected"})
+        raw = self.rfile.read(length)
+        msg = BytesParser(policy=policy.default).parsebytes(
+            b"Content-Type: " + ctype.encode() + b"\r\n\r\n" + raw
+        )
+        for part in msg.iter_parts():
+            if part.get_param("name", header="content-disposition") != "file":
+                continue
+            path = unique_path(part.get_filename() or "unnamed")
+            with open(path, "wb") as f:
+                f.write(part.get_payload(decode=True))
+            return self.reply(200, {"path": path})
+        return self.reply(400, {"error": "no file field"})
+
+    def reply(self, code, obj):
+        body = json.dumps(obj).encode()
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, fmt, *args):
+        sys.stderr.write("%s %s\n" % (self.address_string(), fmt % args))
+
+
+def run_drop(argv):
+    port = int(argv[0]) if argv else 8090
+    os.makedirs(INBOX, exist_ok=True)
+    print(f"保存先: {INBOX}", flush=True)
+    run(DropHandler, port)
+
+
+def main():
+    cmd = os.path.basename(sys.argv[0])
+    if cmd == "dropserve":
+        run_drop(sys.argv[1:])
+    else:
+        run_serve(sys.argv[1:])
+
+
+if __name__ == "__main__":
+    main()

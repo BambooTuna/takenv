@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# 普段起動しておきたい常駐サービスを foreground で一括起動する。
+# 各サービスは背景ジョブとして走り、ログはこの端末にまとめて流れる。
+# Ctrl+C (SIGINT) または SIGTERM で全部まとめて止まる。
+#
+# サービス追加は下の「サービス登録」セクションに1行足す:
+#   start_service <ラベル> <コマンド> [args...]
+set -uo pipefail
+
+pids=()
+labels=()
+
+start_service() {
+	local label=$1; shift
+	"$@" &
+	local pid=$!
+	pids+=("$pid")
+	labels+=("$label")
+	echo "▶ started $label (pid=$pid)"
+}
+
+cleanup() {
+	trap - INT TERM EXIT
+	echo ""
+	echo "▶ stopping all services..."
+	for p in "${pids[@]}"; do
+		kill -TERM "$p" 2>/dev/null || true
+	done
+	# TERM で降りるのを最大 3 秒待つ
+	for _ in 1 2 3 4 5 6; do
+		local alive=0
+		for p in "${pids[@]}"; do
+			kill -0 "$p" 2>/dev/null && { alive=1; break; }
+		done
+		[[ $alive -eq 0 ]] && break
+		sleep 0.5
+	done
+	# 残ってたら強制 kill
+	for p in "${pids[@]}"; do
+		if kill -0 "$p" 2>/dev/null; then
+			echo "  ! pid $p not responding, sending KILL"
+			kill -KILL "$p" 2>/dev/null || true
+		fi
+	done
+	wait 2>/dev/null || true
+	echo "▶ all stopped"
+}
+trap cleanup INT TERM EXIT
+
+# ---- サービス登録: ここに追加していく ----------------------------------
+start_service cli-proxy-api \
+	mise exec -- cli-proxy-api -config "$HOME/.config/cli-proxy-api/config.yaml"
+
+start_service tmuxui-air bash -c \
+	'cd "$HOME/workdir/Bambootuna/tmuxui" && TMUXUI_TOKEN=bambootuna exec mise exec -- air'
+# ------------------------------------------------------------------------
+
+echo "▶ ${#pids[@]} services running (Ctrl+C to stop all)"
+wait

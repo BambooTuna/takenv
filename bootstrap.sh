@@ -70,6 +70,16 @@ setup_linux() {
     ok "ja_JP.UTF-8 ロケールを生成"
   fi
 
+  # Chrome for Testing (ヘッドレスブラウザ) 実行に必要な共有ライブラリ
+  # Ubuntu 24.04+ は libasound2t64、22.04 系は libasound2 で提供される
+  local libasound_pkg=libasound2t64
+  apt-cache show libasound2t64 >/dev/null 2>&1 || libasound_pkg=libasound2
+  DEBIAN_FRONTEND=noninteractive $SUDO apt-get install -y \
+    libnss3 libnspr4 "$libasound_pkg" libgbm1 libxkbcommon0 \
+    libxcomposite1 libxdamage1 libxrandr2 libxfixes3 libcups2 \
+    libatk1.0-0 libatk-bridge2.0-0 libpangocairo-1.0-0 libgtk-3-0 libxshmfence1 \
+    fonts-noto-cjk fonts-noto-color-emoji
+
   log "mise"
   if command -v mise >/dev/null 2>&1 || [ -x "$HOME/.local/bin/mise" ]; then
     ok "インストール済み"
@@ -165,6 +175,19 @@ setup_claude_code() {
   fi
 }
 
+setup_headless_browser() {
+  # Playwright ライブラリ本体は mise の [tools] で管理。ここでは chromium バイナリと
+  # 対話スクリプト用の scratch ディレクトリを整える。冪等: 既に導入済みなら再DLしない。
+  log "Playwright chromium (ヘッドレスブラウザ)"
+  mise x -- playwright install chromium
+  # ESM の `import { chromium } from 'playwright'` を任意の .mjs から通せるよう
+  # scratch/node_modules/playwright を mise 管理のライブラリへ張る
+  local scratch="$HOME/.cache/browser-scratch"
+  local pw_lib="$HOME/.local/share/mise/installs/npm-playwright/latest/lib/node_modules/playwright"
+  mkdir -p "$scratch/node_modules"
+  ln -sfn "$pw_lib" "$scratch/node_modules/playwright"
+}
+
 print_manual_steps() {
   log "完了 🎉 — 残りの手動ステップ"
   cat <<'EOS'
@@ -200,6 +223,7 @@ main() {
   setup_dotfiles
   setup_mise_tools
   setup_claude_code
+  setup_headless_browser
   print_manual_steps
 }
 
