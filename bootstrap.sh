@@ -199,6 +199,12 @@ EOS
   3. Tailscale に参加（SSH 受付も有効化）: make tailscale-up
      → Mac から herdr --remote <user>@<このホスト名> で接続できる
 EOS
+    if grep -qi microsoft /proc/version 2>/dev/null; then
+      cat <<'EOS'
+  4. Windows 母艦側の設定（自動再起動抑止・WSL 自動起動・.wslconfig 反映）:
+     Windows PowerShell を管理者で開いて windows/bootstrap.ps1 を実行
+EOS
+    fi
   fi
   if [ "$OS" = "Darwin" ]; then
     cat <<'EOS'
