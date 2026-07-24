@@ -11,6 +11,8 @@
   - セキュリティとポート占有のため 1 時間で自動終了する
   - dropserve の保存先は環境変数 DROPSERVE_DIR で上書き可
   - dropserve の1ファイル上限は DROPSERVE_MAX_MB (MB, 既定 10240 = 10GB) で上書き可
+  - dropserve の受信レート上限は DROPSERVE_RATE_MBPS (MB/s, 未指定=無制限) で指定可
+    (上り帯域を dropserve に 100% 食わせないための保険。目安は上り帯域の 70〜80%)
 """
 import errno
 import functools
@@ -20,11 +22,13 @@ import re
 import subprocess
 import sys
 import threading
+import time
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 INBOX = os.environ.get("DROPSERVE_DIR") or os.path.expanduser("~/.dropserve")
 MAX_BYTES = int(os.environ.get("DROPSERVE_MAX_MB") or 10240) << 20
+RATE_LIMIT_BPS = float(os.environ.get("DROPSERVE_RATE_MBPS") or 0) * 1024 * 1024
 LIFETIME_SEC = 3600
 CHUNK = 1 << 20  # multipart のストリーミング読み出し単位 (1MB)
 
@@ -240,6 +244,30 @@ def unique_path(name, save_dir):
     return path
 
 
+class _RateLimiter:
+    """バイト単位の token bucket。累計消費と経過時間から必要な sleep を挟む。
+
+    bps=0 で無効化 (何もしない)。目的は上り帯域を dropserve に 100% 食わせないこと
+    で、SSH の対話性と bufferbloat 回避のための息継ぎを残す。
+    """
+
+    def __init__(self, bps):
+        self.bps = bps
+        self.start = None
+        self.consumed = 0
+
+    def wait(self, n):
+        if self.bps <= 0 or n <= 0:
+            return
+        if self.start is None:
+            self.start = time.monotonic()
+        self.consumed += n
+        expected = self.consumed / self.bps
+        elapsed = time.monotonic() - self.start
+        if expected > elapsed:
+            time.sleep(expected - elapsed)
+
+
 class _LimitedReader:
     """Content-Length ぶんまでしか rfile から読まないラッパ。keep-alive では相手が close
     しないため、Content-Length 越えの読み込みは永久ブロックする。それを止めるガード。"""
@@ -314,19 +342,22 @@ class _NullSink:
 
 
 def _read_part_headers(src):
+    # ヘッダ名は ASCII だが値は RFC 7578 に従いモダンブラウザが UTF-8 の生バイトを入れてくる
+    # (例: filename="日本語.zip")。latin-1 で解釈するとファイル名が化けるので値だけ UTF-8。
     headers = {}
     while True:
         line = src.readline().rstrip(b"\r\n")
         if not line:
             return headers
         k, _, v = line.partition(b":")
-        headers[k.decode("latin-1").lower()] = v.strip().decode("latin-1")
+        headers[k.decode("latin-1").lower()] = v.strip().decode("utf-8", errors="replace")
 
 
-def _copy_until_boundary(src, dst, boundary_b, limit):
+def _copy_until_boundary(src, dst, boundary_b, limit, limiter=None):
     """src から `\\r\\n--boundary` の直前まで dst に転送する。境界の後ろは src に putback。
 
     書き出し総バイト数が limit を超えたら ValueError。全部メモリに載せず 1MB チャンクで流す。
+    limiter を渡すとチャンク受信ごとにレート制御用の sleep が入る。
     """
     sep = b"\r\n" + boundary_b
     hold = b""
@@ -336,6 +367,8 @@ def _copy_until_boundary(src, dst, boundary_b, limit):
         chunk = src.read(CHUNK)
         if not chunk:
             raise EOFError("multipart 本文が途中で切断されました")
+        if limiter is not None:
+            limiter.wait(len(chunk))
         hold += chunk
         idx = hold.find(sep)
         if idx >= 0:
@@ -355,7 +388,7 @@ def _flush(dst, data, total, limit):
     return total + len(data)
 
 
-def _parse_and_save(rfile, boundary, save_dir, limit):
+def _parse_and_save(rfile, boundary, save_dir, limit, limiter=None):
     """multipart/form-data を stream で読み、`name="file"` のパートを save_dir に書き出す。保存パスを返す。"""
     src = _Buffered(rfile)
     boundary_b = b"--" + boundary.encode()
@@ -374,13 +407,13 @@ def _parse_and_save(rfile, boundary, save_dir, limit):
             saved_path = unique_path(m_file.group(1) or "unnamed", save_dir)
             try:
                 with open(saved_path, "wb") as f:
-                    _copy_until_boundary(src, f, boundary_b, limit)
+                    _copy_until_boundary(src, f, boundary_b, limit, limiter)
             except BaseException:
                 if os.path.exists(saved_path):
                     os.remove(saved_path)
                 raise
         else:
-            _copy_until_boundary(src, _NullSink(), boundary_b, limit)
+            _copy_until_boundary(src, _NullSink(), boundary_b, limit, limiter)
         tail = src.read(2)
         if tail == b"--":
             src.readline()  # 末尾 boundary の後ろの \r\n を捨てる
@@ -418,8 +451,9 @@ class DropHandler(BaseHTTPRequestHandler):
             return self.reply(413, {"error": f"size limit {MAX_BYTES >> 20}MB"})
         # Content-Length ぶんまでにキャップする。無ければ生の rfile を渡す (末尾で詰まる可能性はあるが古い挙動を維持)
         src = _LimitedReader(self.rfile, length) if length > 0 else self.rfile
+        limiter = _RateLimiter(RATE_LIMIT_BPS)
         try:
-            saved = _parse_and_save(src, boundary, INBOX, MAX_BYTES)
+            saved = _parse_and_save(src, boundary, INBOX, MAX_BYTES, limiter=limiter)
         except ValueError as e:
             self.close_connection = True
             return self.reply(413, {"error": str(e)})
@@ -446,6 +480,9 @@ def run_drop(argv):
     port = int(argv[0]) if argv else 8090
     os.makedirs(INBOX, exist_ok=True)
     print(f"保存先: {INBOX}", flush=True)
+    print(f"1ファイル上限: {MAX_BYTES >> 20}MB", flush=True)
+    if RATE_LIMIT_BPS > 0:
+        print(f"受信レート上限: {RATE_LIMIT_BPS / 1024 / 1024:.1f} MB/s", flush=True)
     run(DropHandler, port)
 
 
