@@ -1,0 +1,12 @@
+# Cloudflare公式plugin由来のskills（pluginで再取得できるのでリポジトリに含めない）
+agents-sdk/
+cloudflare/
+cloudflare-email-service/
+cloudflare-one/
+cloudflare-one-migrations/
+durable-objects/
+sandbox-sdk/
+turnstile-spin/
+web-perf/
+workers-best-practices/
+wrangler/
