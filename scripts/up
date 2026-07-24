@@ -7,6 +7,8 @@
 #   start_service <ラベル> <コマンド> [args...]
 set -uo pipefail
 
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
 pids=()
 labels=()
 
@@ -49,10 +51,10 @@ trap cleanup INT TERM EXIT
 
 # ---- サービス登録: ここに追加していく ----------------------------------
 start_service cli-proxy-api \
-	mise exec -- cli-proxy-api -config "$HOME/.config/cli-proxy-api/config.yaml"
+	docker compose -f "$REPO_ROOT/docker-compose.yml" up cli-proxy-api
 
-start_service tmuxui-air bash -c \
-	'cd "$HOME/workdir/Bambootuna/tmuxui" && TMUXUI_TOKEN=bambootuna exec mise exec -- air'
+start_service tmuxui \
+	docker compose -f "$REPO_ROOT/docker-compose.yml" up tmuxui
 # ------------------------------------------------------------------------
 
 echo "▶ ${#pids[@]} services running (Ctrl+C to stop all)"
