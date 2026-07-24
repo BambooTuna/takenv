@@ -10,22 +10,23 @@
   - ポートが使用中なら +1 しながら空きを探す
   - セキュリティとポート占有のため 1 時間で自動終了する
   - dropserve の保存先は環境変数 DROPSERVE_DIR で上書き可
+  - dropserve の1ファイル上限は DROPSERVE_MAX_MB (MB, 既定 10240 = 10GB) で上書き可
 """
 import errno
 import functools
 import json
 import os
+import re
 import subprocess
 import sys
 import threading
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, SimpleHTTPRequestHandler, ThreadingHTTPServer
-from email.parser import BytesParser
-from email import policy
 
 INBOX = os.environ.get("DROPSERVE_DIR") or os.path.expanduser("~/.dropserve")
-MAX_BYTES = 500 << 20  # 500MB
+MAX_BYTES = int(os.environ.get("DROPSERVE_MAX_MB") or 10240) << 20
 LIFETIME_SEC = 3600
+CHUNK = 1 << 20  # multipart のストリーミング読み出し単位 (1MB)
 
 PAGE = """<!doctype html>
 <meta charset="utf-8">
@@ -38,6 +39,11 @@ PAGE = """<!doctype html>
   .item { margin: 12px 0; padding: 10px 14px; background: #313244; border-radius: 8px; display: flex; align-items: center; gap: 10px; }
   .item code { flex: 1; word-break: break-all; font-size: 13px; }
   .item button { background: #89b4fa; color: #1e1e2e; border: 0; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-weight: 600; }
+  .item.progress { flex-direction: column; align-items: stretch; gap: 6px; }
+  .item .name { font-size: 14px; word-break: break-all; }
+  .bar { height: 6px; background: #45475a; border-radius: 3px; overflow: hidden; }
+  .bar .fill { height: 100%; background: #89b4fa; width: 0%; transition: width .15s linear; }
+  .status { font-size: 12px; color: #a6adc8; font-variant-numeric: tabular-nums; }
   .err { color: #f38ba8; }
 </style>
 <div id="zone">ここにファイルをドロップ<br><small>またはクリックして選択</small></div>
@@ -50,6 +56,7 @@ picker.onchange = () => upload(picker.files);
 zone.ondragover = e => { e.preventDefault(); zone.classList.add('over'); };
 zone.ondragleave = () => zone.classList.remove('over');
 zone.ondrop = e => { e.preventDefault(); zone.classList.remove('over'); upload(e.dataTransfer.files); };
+
 function copyText(text) {
   // navigator.clipboard は HTTPS/localhost 限定なので、平文 HTTP では textarea 方式で書き込む
   if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
@@ -64,28 +71,84 @@ function copyText(text) {
   ta.remove();
   return ok ? Promise.resolve() : Promise.reject(new Error('copy failed'));
 }
+
+function fmtMB(bytes) { return (bytes / 1048576).toFixed(1); }
+function fmtEta(sec) {
+  if (!isFinite(sec) || sec < 0) return '';
+  if (sec < 90) return Math.round(sec) + 's';
+  return Math.round(sec / 60) + 'm';
+}
+
+// fetch は送信進捗を取れないので XHR を使う
+function xhrUpload(file, onProgress) {
+  return new Promise((resolve, reject) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/upload');
+    xhr.upload.onprogress = e => { if (e.lengthComputable) onProgress(e.loaded, e.total); };
+    xhr.onload = () => {
+      let j = {};
+      try { j = JSON.parse(xhr.responseText); } catch (e) {}
+      if (xhr.status >= 200 && xhr.status < 300) resolve(j.path);
+      else reject(new Error(j.error || ('HTTP ' + xhr.status)));
+    };
+    xhr.onerror = () => reject(new Error('接続に失敗しました'));
+    xhr.onabort = () => reject(new Error('中断されました'));
+    xhr.send(fd);
+  });
+}
+
 async function upload(files) {
   for (const f of files) {
-    const fd = new FormData();
-    fd.append('file', f);
     const div = document.createElement('div');
-    div.className = 'item';
-    div.textContent = f.name + ' 送信中…';
+    div.className = 'item progress';
+    const name = document.createElement('div');
+    name.className = 'name';
+    name.textContent = f.name;
+    const bar = document.createElement('div');
+    bar.className = 'bar';
+    const fill = document.createElement('div');
+    fill.className = 'fill';
+    bar.appendChild(fill);
+    const status = document.createElement('div');
+    status.className = 'status';
+    status.textContent = '準備中…';
+    div.append(name, bar, status);
     log.prepend(div);
+
+    // 直近サンプルから指数移動平均で速度を出す (瞬間値だとブレが大きい)
+    let lastMs = performance.now(), lastLoaded = 0, ema = 0;
+
     try {
-      const r = await fetch('/upload', { method: 'POST', body: fd });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error || r.status);
-      div.innerHTML = '<code>' + j.path + '</code><button>コピー</button>';
+      const path = await xhrUpload(f, (loaded, total) => {
+        const now = performance.now();
+        const dt = now - lastMs;
+        if (dt >= 250) {
+          const inst = (loaded - lastLoaded) / dt * 1000;
+          ema = ema ? ema * 0.7 + inst * 0.3 : inst;
+          lastMs = now; lastLoaded = loaded;
+        }
+        const pct = total ? loaded / total * 100 : 0;
+        fill.style.width = pct.toFixed(1) + '%';
+        const rate = ema ? fmtMB(ema) + ' MB/s' : '…';
+        const eta = ema && total ? fmtEta((total - loaded) / ema) : '';
+        status.textContent = fmtMB(loaded) + ' / ' + fmtMB(total) + ' MB  (' + pct.toFixed(1) + '%)  ' + rate + (eta ? '  残り ' + eta : '');
+      });
+      fill.style.width = '100%';
+      div.className = 'item';
+      div.innerHTML = '<code></code><button>コピー</button>';
+      div.querySelector('code').textContent = path;
       div.querySelector('button').onclick = ev => {
-        copyText(j.path).then(
+        copyText(path).then(
           () => { ev.target.textContent = '✓'; },
           () => { ev.target.textContent = '失敗'; },
         );
         setTimeout(() => ev.target.textContent = 'コピー', 1200);
       };
     } catch (err) {
-      div.innerHTML = '<span class="err">' + f.name + ' 失敗: ' + err.message + '</span>';
+      status.className = 'status err';
+      status.textContent = '失敗: ' + err.message;
     }
   }
 }
@@ -166,15 +229,164 @@ def run_serve(argv):
 
 # --- dropserve: ブラウザからのドロップを保存する ---
 
-def unique_path(name):
+def unique_path(name, save_dir):
     base = os.path.basename(name.replace("\\", "/")) or "unnamed"
     stem, ext = os.path.splitext(base)
-    path = os.path.join(INBOX, base)
+    path = os.path.join(save_dir, base)
     n = 1
     while os.path.exists(path):
-        path = os.path.join(INBOX, f"{stem}_{n}{ext}")
+        path = os.path.join(save_dir, f"{stem}_{n}{ext}")
         n += 1
     return path
+
+
+class _LimitedReader:
+    """Content-Length ぶんまでしか rfile から読まないラッパ。keep-alive では相手が close
+    しないため、Content-Length 越えの読み込みは永久ブロックする。それを止めるガード。"""
+
+    def __init__(self, src, limit):
+        self.src = src
+        self.remaining = limit
+
+    def _cap(self, n):
+        if n is None or n < 0 or n > self.remaining:
+            return self.remaining
+        return n
+
+    def read(self, n=-1):
+        if self.remaining <= 0:
+            return b""
+        data = self.src.read(self._cap(n))
+        self.remaining -= len(data)
+        return data
+
+    def read1(self, n=-1):
+        if self.remaining <= 0:
+            return b""
+        data = self.src.read1(self._cap(n))
+        self.remaining -= len(data)
+        return data
+
+    def readline(self, size=-1):
+        if self.remaining <= 0:
+            return b""
+        line = self.src.readline(self._cap(size))
+        self.remaining -= len(line)
+        return line
+
+
+class _Buffered:
+    """rfile を包み、境界検出後の余分バイトを putback できるようにする薄いラッパ。"""
+
+    def __init__(self, src):
+        self.src = src
+        self.buf = b""
+
+    def read(self, n):
+        # BufferedReader.read(n) は n バイト到達までブロックする仕様のため、keep-alive で
+        # 相手が close しない状況では末尾で詰まる。1 syscall 分だけ返す read1 に切り替える。
+        if not self.buf:
+            return self.src.read1(n)
+        if len(self.buf) >= n:
+            data, self.buf = self.buf[:n], self.buf[n:]
+            return data
+        data = self.buf
+        self.buf = b""
+        return data + self.src.read1(n - len(data))
+
+    def readline(self):
+        i = self.buf.find(b"\n")
+        if i >= 0:
+            line, self.buf = self.buf[: i + 1], self.buf[i + 1 :]
+            return line
+        line = self.buf + self.src.readline()
+        self.buf = b""
+        return line
+
+    def unread(self, data):
+        if data:
+            self.buf = data + self.buf
+
+
+class _NullSink:
+    def write(self, data):
+        pass
+
+
+def _read_part_headers(src):
+    headers = {}
+    while True:
+        line = src.readline().rstrip(b"\r\n")
+        if not line:
+            return headers
+        k, _, v = line.partition(b":")
+        headers[k.decode("latin-1").lower()] = v.strip().decode("latin-1")
+
+
+def _copy_until_boundary(src, dst, boundary_b, limit):
+    """src から `\\r\\n--boundary` の直前まで dst に転送する。境界の後ろは src に putback。
+
+    書き出し総バイト数が limit を超えたら ValueError。全部メモリに載せず 1MB チャンクで流す。
+    """
+    sep = b"\r\n" + boundary_b
+    hold = b""
+    total = 0
+    keep = len(sep) - 1  # チャンク境界を跨いだ sep 検出のため末尾に残す
+    while True:
+        chunk = src.read(CHUNK)
+        if not chunk:
+            raise EOFError("multipart 本文が途中で切断されました")
+        hold += chunk
+        idx = hold.find(sep)
+        if idx >= 0:
+            total = _flush(dst, hold[:idx], total, limit)
+            src.unread(hold[idx + len(sep) :])
+            return total
+        if len(hold) > keep:
+            emit = len(hold) - keep
+            total = _flush(dst, hold[:emit], total, limit)
+            hold = hold[emit:]
+
+
+def _flush(dst, data, total, limit):
+    if total + len(data) > limit:
+        raise ValueError(f"size limit {limit >> 20}MB")
+    dst.write(data)
+    return total + len(data)
+
+
+def _parse_and_save(rfile, boundary, save_dir, limit):
+    """multipart/form-data を stream で読み、`name="file"` のパートを save_dir に書き出す。保存パスを返す。"""
+    src = _Buffered(rfile)
+    boundary_b = b"--" + boundary.encode()
+    first = src.readline().rstrip(b"\r\n")
+    if first != boundary_b:
+        raise ValueError("先頭 boundary が見つかりません")
+    saved_path = None
+    while True:
+        headers = _read_part_headers(src)
+        cd = headers.get("content-disposition", "")
+        m_name = re.search(r'name="([^"]*)"', cd)
+        m_file = re.search(r'filename="([^"]*)"', cd)
+        is_file = bool(m_name and m_name.group(1) == "file" and m_file)
+        if is_file and saved_path is None:
+            os.makedirs(save_dir, exist_ok=True)
+            saved_path = unique_path(m_file.group(1) or "unnamed", save_dir)
+            try:
+                with open(saved_path, "wb") as f:
+                    _copy_until_boundary(src, f, boundary_b, limit)
+            except BaseException:
+                if os.path.exists(saved_path):
+                    os.remove(saved_path)
+                raise
+        else:
+            _copy_until_boundary(src, _NullSink(), boundary_b, limit)
+        tail = src.read(2)
+        if tail == b"--":
+            src.readline()  # 末尾 boundary の後ろの \r\n を捨てる
+            return saved_path
+        if tail != b"\r\n":
+            raise ValueError("boundary の後ろが不正です")
 
 
 class DropHandler(BaseHTTPRequestHandler):
@@ -189,24 +401,34 @@ class DropHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path != "/upload":
             return self.reply(404, {"error": "not found"})
-        length = int(self.headers.get("Content-Length") or 0)
-        if length <= 0 or length > MAX_BYTES:
-            return self.reply(413, {"error": f"size limit {MAX_BYTES >> 20}MB"})
         ctype = self.headers.get("Content-Type", "")
         if "multipart/form-data" not in ctype:
             return self.reply(400, {"error": "multipart/form-data expected"})
-        raw = self.rfile.read(length)
-        msg = BytesParser(policy=policy.default).parsebytes(
-            b"Content-Type: " + ctype.encode() + b"\r\n\r\n" + raw
-        )
-        for part in msg.iter_parts():
-            if part.get_param("name", header="content-disposition") != "file":
-                continue
-            path = unique_path(part.get_filename() or "unnamed")
-            with open(path, "wb") as f:
-                f.write(part.get_payload(decode=True))
-            return self.reply(200, {"path": path})
-        return self.reply(400, {"error": "no file field"})
+        m = re.search(r'boundary=(?:"([^"]+)"|([^;\s]+))', ctype)
+        if not m:
+            return self.reply(400, {"error": "boundary missing"})
+        boundary = m.group(1) or m.group(2)
+        # Content-Length があれば保険で早期リジェクト (multipart オーバーヘッド 64KB 分は許容)
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            length = 0
+        if length and length > MAX_BYTES + (64 << 10):
+            self.close_connection = True
+            return self.reply(413, {"error": f"size limit {MAX_BYTES >> 20}MB"})
+        # Content-Length ぶんまでにキャップする。無ければ生の rfile を渡す (末尾で詰まる可能性はあるが古い挙動を維持)
+        src = _LimitedReader(self.rfile, length) if length > 0 else self.rfile
+        try:
+            saved = _parse_and_save(src, boundary, INBOX, MAX_BYTES)
+        except ValueError as e:
+            self.close_connection = True
+            return self.reply(413, {"error": str(e)})
+        except EOFError as e:
+            self.close_connection = True
+            return self.reply(400, {"error": str(e)})
+        if not saved:
+            return self.reply(400, {"error": "no file field"})
+        return self.reply(200, {"path": saved})
 
     def reply(self, code, obj):
         body = json.dumps(obj).encode()
