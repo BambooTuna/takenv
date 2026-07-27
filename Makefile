@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: link unlink doctor tailscale-up help
+.PHONY: link unlink doctor tailscale-up gpu-setup up help
 
 # リンク定義: <リンク先>:<リポジトリ内の相対パス>
 # herdr/mise/codex はディレクトリにログ・認証情報等も置かれるため設定ファイルのみリンクする
@@ -15,7 +15,9 @@ DOTFILES := \
 	$(HOME)/.claude:dotfiles/.claude \
 	$(HOME)/.codex/prompts:dotfiles/.codex/prompts \
 	$(HOME)/.gogcli:dotfiles/.gogcli \
-	$(HOME)/.local/bin/osc52-yank:dotfiles/bin/osc52-yank
+	$(HOME)/.local/bin/osc52-yank:dotfiles/bin/osc52-yank \
+	$(HOME)/.local/bin/serve:dotfiles/bin/tailserve \
+	$(HOME)/.local/bin/dropserve:dotfiles/bin/tailserve
 
 # 環境変数 TAKENV_LINK_BACKUP=1 で既存ファイルを .bak に退避してリンクを張る（bootstrap.sh が使用）
 link:
@@ -96,14 +98,33 @@ tailscale-up:
 	fi
 	@tailscale status
 
+# NVIDIA GPU をコンテナから使えるようにする（NVIDIA Container Toolkit の導入と docker 連携設定）。
+# GPU の有無はマシン依存のため bootstrap には含めず、必要なマシンでだけ手動実行する。
+gpu-setup:
+	@./scripts/gpu-setup
+
+# 普段起動しておきたい常駐サービスを foreground で一括起動する。
+# 各サービスは背景ジョブとして走り、ログはこの端末にまとめて流れる。
+# Ctrl+C ですべて止まる。追加するサービスは scripts/up の下部に1行足す。
+up:
+	@./scripts/up
+
 help:
 	@echo "takenv — 開発環境構築リポジトリ"
 	@echo ""
 	@echo "  ./bootstrap.sh   ゼロ状態からの一括セットアップ（OS自動判別・冪等）"
 	@echo ""
-	@echo "利用可能なコマンド:"
+	@echo "セットアップ・診断:"
 	@echo "  make link    - dotfiles のシンボリックリンクを作成"
 	@echo "  make unlink  - dotfiles のシンボリックリンクを削除（リンクのみ・実ファイルは残る）"
 	@echo "  make doctor  - 環境の健全性チェック"
 	@echo "  make tailscale-up - Tailscale に参加（Linux は --ssh 付きで SSH 受付も有効化）"
+	@echo ""
+	@echo "オプション（マシン依存で bootstrap から切り出したもの）:"
+	@echo "  make gpu-setup - NVIDIA GPU をコンテナ／btop から使えるようにする（Container Toolkit + docker 連携 + btop GPU 表示）"
+	@echo ""
+	@echo "常駐サービス:"
+	@echo "  make up      - 普段起動しておきたい常駐サービスを foreground で一括起動 (Ctrl+C で全停止)"
+	@echo "                 サービス追加は scripts/up に1行足す"
+	@echo ""
 	@echo "  make help    - このヘルプを表示"

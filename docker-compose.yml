@@ -1,17 +1,40 @@
-version: '3.8'
-
 services:
-  takenv:
-    build:
-      context: .
-      dockerfile: devcontainer/Dockerfile
-      args:
-        USER_UID: ${USER_UID:-1000}
-        USER_GID: ${USER_GID:-1000}
-    container_name: takenv-dev
-    volumes:
-      - .:/workspace
-      - /var/run/docker.sock:/var/run/docker.sock
+  # CLIProxyAPI: Antigravity / Codex / Claude / Grok を OpenAI 互換 API として提供する常駐サービス
+  # 上流: https://github.com/router-for-me/CLIProxyAPI (Docker Hub: eceasy/cli-proxy-api)
+  # バージョンは mise 管理していた時と同じものに固定する（更新時はここを書き換え）
+  cli-proxy-api:
+    image: eceasy/cli-proxy-api:v7.2.94
+    container_name: cli-proxy-api
     restart: unless-stopped
-    stdin_open: true
-    tty: true
+    ports:
+      - "8317:8317"
+    # WSL/Linux で host.docker.internal を解決するための固定エイリアス
+    # ホスト側で動く Ollama (docker run した ollama コンテナ側の 11434) 等に到達するために使う
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ${HOME}/.config/cli-proxy-api/config.yaml:/CLIProxyAPI/config.yaml
+      - ${HOME}/.cli-proxy-api:/root/.cli-proxy-api
+
+  # tmuxui: スマホから tmux セッションを操作する Web UI 常駐サービス
+  # 上流: https://github.com/BambooTuna/tmuxui (GHCR: ghcr.io/bambootuna/tmuxui)
+  # ホストの tmux socket をマウントするため network_mode: host + UID を合わせる。
+  # 認証トークンは .env の TMUXUI_TOKEN で渡す（未設定なら起動失敗）。
+  tmuxui:
+    image: ghcr.io/bambootuna/tmuxui:latest
+    container_name: tmuxui
+    restart: unless-stopped
+    network_mode: host
+    user: "${TMUXUI_UID:-1000}:${TMUXUI_GID:-1000}"
+    environment:
+      TMUXUI_TOKEN: "${TMUXUI_TOKEN}"
+      # filer が pane の CWD (host 側絶対パス) をそのまま読めるよう HOME をホストと一致させる
+      HOME: "${HOME}"
+    volumes:
+      - /tmp/tmux-${TMUXUI_UID:-1000}:/tmp/tmux-${TMUXUI_UID:-1000}
+      # filer から pane の CWD をそのまま辿れるよう $HOME 全体を同一パスで read-only マウント
+      - ${HOME}:${HOME}:ro
+      # upload/create 専用の rw 領域 (~/.tmuxui/uploads/YYYY-MM-DD/ に保存される)
+      - ${HOME}/.tmuxui:${HOME}/.tmuxui
+      # herdr socket も明示(念のため)
+      - ${HOME}/.config/herdr/herdr.sock:${HOME}/.config/herdr/herdr.sock

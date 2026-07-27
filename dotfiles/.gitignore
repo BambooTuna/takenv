@@ -32,6 +32,10 @@
 /.claude/daemon/
 /.claude/daemon.*
 /.claude/daemon-auth-*
+/.claude/gh-pr-status-cache.json
+
+# Python bytecode キャッシュ
+**/__pycache__/
 
 # hyperframes 系スキル（外部配布物のためリポジトリ管理外）
 /.claude/skills/hyperframes/

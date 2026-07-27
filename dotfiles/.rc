@@ -1,6 +1,9 @@
 # env
 export LANG=ja_JP.UTF-8
 
+# dropserve が上り帯域を 100% 占有しないよう天井を設定 (SSH 対話性 / bufferbloat 対策)
+export DROPSERVE_RATE_MBPS=10
+
 # alias
 alias v="nvim"
 alias k="kubectl"
