@@ -9,6 +9,36 @@ set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
+# ---- pre-flight: cli-proxy-api の設定を冪等に用意 --------------------------
+# docker-compose.yml が bind mount する側の実体が無いと Docker が空ディレクトリを
+# 掘ってしまい `read /CLIProxyAPI/config.yaml: is a directory` で落ちるため、
+# ここで先回りして用意する。既に存在するときは何もしない。
+CLI_PROXY_CONFIG="${HOME}/.config/cli-proxy-api/config.yaml"
+CLI_PROXY_AUTH_DIR="${HOME}/.cli-proxy-api"
+CLI_PROXY_CONFIG_URL="https://raw.githubusercontent.com/router-for-me/CLIProxyAPI/main/config.example.yaml"
+
+# Docker が先に空ディレクトリを掘ってしまった場合の救済（空のときだけ rmdir)
+if [[ -d "$CLI_PROXY_CONFIG" ]]; then
+	echo "▶ cli-proxy-api: $CLI_PROXY_CONFIG が空ディレクトリなので撤去します"
+	rmdir "$CLI_PROXY_CONFIG" || {
+		echo "✗ cli-proxy-api: $CLI_PROXY_CONFIG を撤去できません（中身あり）"
+		exit 1
+	}
+fi
+
+if [[ ! -f "$CLI_PROXY_CONFIG" ]]; then
+	echo "▶ cli-proxy-api: config.yaml が無いので upstream から取得します"
+	mkdir -p "$(dirname "$CLI_PROXY_CONFIG")"
+	if ! curl -fsSL -o "$CLI_PROXY_CONFIG" "$CLI_PROXY_CONFIG_URL"; then
+		echo "✗ cli-proxy-api: config.example.yaml の取得に失敗しました ($CLI_PROXY_CONFIG_URL)"
+		exit 1
+	fi
+	echo "✓ cli-proxy-api: $CLI_PROXY_CONFIG を作成しました"
+fi
+
+mkdir -p "$CLI_PROXY_AUTH_DIR"
+# ---------------------------------------------------------------------------
+
 pids=()
 labels=()
 
