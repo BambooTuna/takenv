@@ -25,3 +25,7 @@ navigate_pane_down = "down"
 [experimental]
 # herdr ペイン内から herdr --remote (リモートマシンへの接続) を許可する
 allow_nested = true
+
+[theme]
+name = "terminal"
+auto_switch = false
