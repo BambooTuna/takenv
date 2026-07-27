@@ -28,9 +28,13 @@ services:
     user: "${TMUXUI_UID:-1000}:${TMUXUI_GID:-1000}"
     environment:
       TMUXUI_TOKEN: "${TMUXUI_TOKEN}"
-      HOME: "/home/tmuxui"
+      # filer が pane の CWD (host 側絶対パス) をそのまま読めるよう HOME をホストと一致させる
+      HOME: "${HOME}"
     volumes:
       - /tmp/tmux-${TMUXUI_UID:-1000}:/tmp/tmux-${TMUXUI_UID:-1000}
-      - ${HOME}/.config/tmuxui:/home/tmuxui/.config/tmuxui
-      # herdr socket を露出(herdr自体はホストで動いている前提)
-      - ${HOME}/.config/herdr/herdr.sock:/home/tmuxui/.config/herdr/herdr.sock
+      # filer から pane の CWD をそのまま辿れるよう $HOME 全体を同一パスで read-only マウント
+      - ${HOME}:${HOME}:ro
+      # upload/create 専用の rw 領域 (~/.tmuxui/uploads/YYYY-MM-DD/ に保存される)
+      - ${HOME}/.tmuxui:${HOME}/.tmuxui
+      # herdr socket も明示(念のため)
+      - ${HOME}/.config/herdr/herdr.sock:${HOME}/.config/herdr/herdr.sock
