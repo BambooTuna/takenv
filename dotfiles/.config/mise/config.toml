@@ -28,6 +28,8 @@ gcloud = "565.0.0"
 terraform = "1.14.9"
 "npm:firebase-tools" = "14.7.0"
 sops = "3.12.2"
+# ローカルサービスを一時的な https://*.trycloudflare.com で公開するトンネル
+"aqua:cloudflare/cloudflared" = "latest"
 
 # 開発補助
 lefthook = "2.0.7"

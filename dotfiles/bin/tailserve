@@ -2,13 +2,14 @@
 """Tailscale 経由でだけファイルをやり取りする簡易サーバー(serve / dropserve 共通実装)。
 
 呼ばれたコマンド名で動作が切り替わる(Makefile で両名をこのファイルにリンクする):
-  serve [path] [port]   path(省略時 cwd)を配る。ファイル指定時は URL をそこまで案内。既定 8000 番
-  dropserve [port]      ブラウザからのドロップを ~/.dropserve に保存する。既定 8090 番
+  serve [--public] [--ttl D] [path] [port]   path(省略時 cwd)を配る。ファイル指定時は URL をそこまで案内。既定 8000 番
+  dropserve [--public] [--ttl D] [port]      ブラウザからのドロップを ~/.dropserve に保存する。既定 8090 番
 
 共通仕様:
   - LAN や素の Wi-Fi から届かないよう Tailscale IF に bind し、URL は MagicDNS ホスト名で表示
+  - --public を付けると cloudflared quick tunnel で一時 https://*.trycloudflare.com も併発行
   - ポートが使用中なら +1 しながら空きを探す
-  - セキュリティとポート占有のため 1 時間で自動終了する
+  - セキュリティとポート占有のため既定 1 時間で自動終了する (--ttl 30m|4h|1d などで最大24hまで延長可)
   - dropserve の保存先は環境変数 DROPSERVE_DIR で上書き可
   - dropserve の1ファイル上限は DROPSERVE_MAX_MB (MB, 既定 10240 = 10GB) で上書き可
   - dropserve の受信レート上限は DROPSERVE_RATE_MBPS (MB/s, 未指定=無制限) で指定可
@@ -19,6 +20,8 @@ import functools
 import json
 import os
 import re
+import shutil
+import signal
 import subprocess
 import sys
 import threading
@@ -29,7 +32,8 @@ from http.server import BaseHTTPRequestHandler, SimpleHTTPRequestHandler, Thread
 INBOX = os.environ.get("DROPSERVE_DIR") or os.path.expanduser("~/.dropserve")
 MAX_BYTES = int(os.environ.get("DROPSERVE_MAX_MB") or 10240) << 20
 RATE_LIMIT_BPS = float(os.environ.get("DROPSERVE_RATE_MBPS") or 0) * 1024 * 1024
-LIFETIME_SEC = 3600
+DEFAULT_LIFETIME_SEC = 3600
+MAX_LIFETIME_SEC = 24 * 3600  # 「ちょっと共有」用ツールで無限占有させないためのハードキャップ
 CHUNK = 1 << 20  # multipart のストリーミング読み出し単位 (1MB)
 
 PAGE = """<!doctype html>
@@ -195,20 +199,123 @@ def bind_with_fallback(handler, ip, port, attempts=20):
     sys.exit(f"error: port {port}〜{port + attempts - 1} すべて使用中")
 
 
-def run(handler, port, url_path=""):
+def _resolve_cloudflared():
+    """PATH に居なくても mise 直下から拾えるようにフォールバックする。"""
+    path = shutil.which("cloudflared")
+    if path:
+        return path
+    try:
+        r = subprocess.run(["mise", "which", "cloudflared"], capture_output=True, text=True, timeout=5)
+        cand = r.stdout.strip()
+        if r.returncode == 0 and cand and os.access(cand, os.X_OK):
+            return cand
+    except OSError:
+        pass
+    return None
+
+
+def start_cloudflared(target_url, url_path=""):
+    """cloudflared quick tunnel を起動し、trycloudflare.com URL を検出したら表示する。
+
+    子プロセスとその出力を吸うスレッドを返し、呼び出し側は終了時に proc.terminate() する。
+    """
+    exe = _resolve_cloudflared()
+    if not exe:
+        sys.exit(
+            "cloudflared が見つかりません。~/takenv で `mise install` を実行するか、"
+            "PATH を通してから再実行してください。"
+        )
+    # --no-autoupdate は quick tunnel でも周期チェックが走るのを抑えるため
+    proc = subprocess.Popen(
+        [exe, "tunnel", "--no-autoupdate", "--url", target_url],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+
+    pat = re.compile(r"https://[A-Za-z0-9-]+\.trycloudflare\.com")
+
+    def _pump():
+        printed = False
+        for line in proc.stderr:
+            if not printed:
+                m = pat.search(line)
+                if m:
+                    sep = "" if url_path.startswith("/") or not url_path else "/"
+                    print(f"→ {m.group(0)}{sep}{url_path}  (公開URL)", flush=True)
+                    printed = True
+
+    t = threading.Thread(target=_pump, daemon=True)
+    t.start()
+    return proc
+
+
+def run(handler, port, url_path="", public=False, lifetime=DEFAULT_LIFETIME_SEC):
     """bind →自動終了タイマー→ URL 表示→サーブ、の共通処理。"""
     ip, host = tailscale_addr()
     srv, port = bind_with_fallback(handler, ip, port)
-    timer = threading.Timer(LIFETIME_SEC, srv.shutdown)
+    timer = threading.Timer(lifetime, srv.shutdown)
     timer.daemon = True
     timer.start()
     # パイプ/リダイレクト時もすぐ URL が見えるよう flush する
-    print(f"→ http://{host}:{port}/{url_path}  ({LIFETIME_SEC // 60}分後に自動終了)", flush=True)
+    print(f"→ http://{host}:{port}/{url_path}  ({_fmt_duration(lifetime)}後に自動終了)", flush=True)
+    tunnel = start_cloudflared(f"http://{ip}:{port}", url_path) if public else None
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
         pass
+    finally:
+        if tunnel is not None:
+            tunnel.send_signal(signal.SIGINT)
+            try:
+                tunnel.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                tunnel.kill()
     print("自動終了しました" if not timer.is_alive() else "終了しました")
+
+
+def _parse_duration(s):
+    """`30m` `4h` `1d` `90s` `3600` → 秒数。単位なしは秒とみなす。"""
+    m = re.fullmatch(r"\s*(\d+)\s*([smhd]?)\s*", s)
+    if not m:
+        sys.exit(f"--ttl: 数値+単位(s/m/h/d) で指定してください: {s!r}")
+    n = int(m.group(1))
+    unit = {"": 1, "s": 1, "m": 60, "h": 3600, "d": 86400}[m.group(2)]
+    return n * unit
+
+
+def _extract_flags(argv):
+    """argv から --public と --ttl <D> を抜き出す。位置引数は順序保持。"""
+    out, public, ttl = [], False, DEFAULT_LIFETIME_SEC
+    it = iter(argv)
+    for a in it:
+        if a == "--public":
+            public = True
+        elif a == "--ttl":
+            try:
+                ttl = _parse_duration(next(it))
+            except StopIteration:
+                sys.exit("--ttl には値が必要です (例: --ttl 4h)")
+        elif a.startswith("--ttl="):
+            ttl = _parse_duration(a[len("--ttl="):])
+        else:
+            out.append(a)
+    if ttl < 60:
+        sys.exit("--ttl は 60 秒以上を指定してください")
+    if ttl > MAX_LIFETIME_SEC:
+        print(f"⚠ --ttl は上限 {_fmt_duration(MAX_LIFETIME_SEC)} にキャップされました", flush=True)
+        ttl = MAX_LIFETIME_SEC
+    return out, public, ttl
+
+
+def _fmt_duration(sec):
+    if sec % 86400 == 0:
+        return f"{sec // 86400}日"
+    if sec % 3600 == 0:
+        return f"{sec // 3600}時間"
+    if sec % 60 == 0:
+        return f"{sec // 60}分"
+    return f"{sec}秒"
 
 
 # --- serve: ファイル/ディレクトリを配る ---
@@ -219,6 +326,7 @@ class ServeHandler(SimpleHTTPRequestHandler):
 
 
 def run_serve(argv):
+    argv, public, ttl = _extract_flags(argv)
     target = os.path.expanduser(argv[0]) if argv else "."
     port = int(argv[1]) if len(argv) > 1 else 8000
     if os.path.isfile(target):
@@ -228,7 +336,7 @@ def run_serve(argv):
     else:
         sys.exit(f"not found: {target}")
     handler = functools.partial(ServeHandler, directory=directory)
-    run(handler, port, url_path)
+    run(handler, port, url_path, public=public, lifetime=ttl)
 
 
 # --- dropserve: ブラウザからのドロップを保存する ---
@@ -477,13 +585,17 @@ class DropHandler(BaseHTTPRequestHandler):
 
 
 def run_drop(argv):
+    argv, public, ttl = _extract_flags(argv)
     port = int(argv[0]) if argv else 8090
     os.makedirs(INBOX, exist_ok=True)
     print(f"保存先: {INBOX}", flush=True)
     print(f"1ファイル上限: {MAX_BYTES >> 20}MB", flush=True)
     if RATE_LIMIT_BPS > 0:
         print(f"受信レート上限: {RATE_LIMIT_BPS / 1024 / 1024:.1f} MB/s", flush=True)
-    run(DropHandler, port)
+    if public:
+        # URL を知る誰でも巨大ファイルを投げ込めるようになる。認証なしなので用途を絞る前提で警告のみ。
+        print("⚠ --public: URL を知る誰でもファイルを送れます。共有範囲に注意してください。", flush=True)
+    run(DropHandler, port, public=public, lifetime=ttl)
 
 
 def main():
