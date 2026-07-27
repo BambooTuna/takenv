@@ -1,0 +1,6 @@
+[user]
+	name = BambooTuna
+	email = bambootuna@gmail.com
+# マシン固有・秘匿設定は ~/.gitconfig.local に書く（git 管理外、無ければ無視される）
+[include]
+	path = ~/.gitconfig.local

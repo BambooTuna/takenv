@@ -1,5 +1,17 @@
 # Git 設定
 
+## ユーザー設定
+
+`~/.gitconfig` は `dotfiles/.gitconfig` へのシンボリックリンクとして `make link` で管理される（`user.name` / `user.email` を含む）。
+
+マシン固有の設定や秘匿情報（署名鍵・社用メールなど）は git 管理外の `~/.gitconfig.local` に書く。`dotfiles/.gitconfig` の `[include]` から読み込まれ、ファイルが無ければ無視される。
+
+```ini
+# ~/.gitconfig.local の例
+[user]
+	email = work@example.com
+```
+
 ## コミットテンプレート
 
 ```bash

@@ -9,6 +9,7 @@
 !/.rc
 !/.zshrc
 !/.tmux.conf
+!/.gitconfig
 
 !/.config/
 !/.config/**
