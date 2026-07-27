@@ -3,7 +3,8 @@
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
     "CLAUDE_CODE_SUBAGENT_MODEL": "claude-sonnet-5[1m]",
-    "ANTHROPIC_BASE_URL": "http://127.0.0.1:8317"
+    "ANTHROPIC_BASE_URL": "http://127.0.0.1:8317",
+    "ANTHROPIC_AUTH_TOKEN": "sk-VjlN7FDmwDHPKueOj"
   },
   "includeCoAuthoredBy": false,
   "permissions": {
@@ -22,8 +23,8 @@
       "Read(.env.*)",
       "Read(id_rsa)",
       "Read(id_ed25519)",
-      "Write(.env*)",
-      "Write(**/secrets/**)",
+      "Edit(.env*)",
+      "Edit(**/secrets/**)",
       "mcp__playwright__browser"
     ],
     "ask": [
