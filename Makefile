@@ -11,6 +11,7 @@ DOTFILES := \
 	$(HOME)/.config/nvim:dotfiles/.config/nvim \
 	$(HOME)/.config/wezterm:dotfiles/.config/wezterm \
 	$(HOME)/.config/karabiner:dotfiles/.config/karabiner \
+	$(HOME)/.ssh/config:dotfiles/.ssh/config \
 	$(HOME)/.config/herdr/config.toml:dotfiles/.config/herdr/config.toml \
 	$(HOME)/.config/mise/config.toml:dotfiles/.config/mise/config.toml \
 	$(HOME)/.claude:dotfiles/.claude \
@@ -22,7 +23,8 @@ DOTFILES := \
 
 # 環境変数 TAKENV_LINK_BACKUP=1 で既存ファイルを .bak に退避してリンクを張る（bootstrap.sh が使用）
 link:
-	@mkdir -p ~/.config/herdr ~/.config/mise ~/.codex ~/.local/bin
+	@mkdir -p ~/.config/herdr ~/.config/mise ~/.codex ~/.local/bin ~/.ssh
+	@chmod 700 ~/.ssh
 	@for pair in $(DOTFILES); do \
 		dst="$${pair%%:*}"; src="$(PWD)/$${pair##*:}"; \
 		if [ -L "$$dst" ] && [ "$$(readlink "$$dst")" = "$$src" ]; then \

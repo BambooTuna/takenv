@@ -23,6 +23,9 @@
 !/.gogcli/
 !/.gogcli/**
 
+!/.ssh/
+!/.ssh/config
+
 !/bin/
 !/bin/**
 
