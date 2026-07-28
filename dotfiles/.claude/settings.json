@@ -60,7 +60,7 @@
     "slack@claude-plugins-official": true,
     "pyright-lsp@claude-plugins-official": true,
     "notion@claude-plugins-official": true,
-    "understand-anything@understand-anything": true
+    "posthog@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "openai-codex": {
@@ -73,12 +73,6 @@
       "source": {
         "source": "github",
         "repo": "anthropics/skills"
-      }
-    },
-    "understand-anything": {
-      "source": {
-        "source": "github",
-        "repo": "Lum1104/Understand-Anything"
       }
     }
   },
