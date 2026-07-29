@@ -20,6 +20,9 @@
 !/.codex/
 !/.codex/**
 
+!/.agents/
+!/.agents/**
+
 !/.gogcli/
 !/.gogcli/**
 
@@ -30,7 +33,7 @@
 !/bin/**
 
 # x-ops スキルの個人ペルソナは公開しない
-/.claude/skills/x-ops/persona/
+/.agents/skills/x-ops/persona/
 
 # Claude Code デーモンのランタイム状態（実行時に生成される）
 /.claude/daemon/
@@ -42,10 +45,10 @@
 **/__pycache__/
 
 # hyperframes 系スキル（外部配布物のためリポジトリ管理外）
-/.claude/skills/hyperframes/
-/.claude/skills/hyperframes-*/
-/.claude/skills/media-use/
-/.claude/skills/product-launch-video/
+/.agents/skills/hyperframes/
+/.agents/skills/hyperframes-*/
+/.agents/skills/media-use/
+/.agents/skills/product-launch-video/
 
 # シークレットは絶対にコミットしない（ホワイトリストより後に置き、必ず優先させる）
 **/.env

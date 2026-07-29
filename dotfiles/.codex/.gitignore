@@ -1,7 +1,7 @@
 # codex CLI が実行時に書き出すもの（丸ごとリンクしているため .gitignore で除外する）
 .tmp
 tmp
-skills
+skills/.system
 installation_id
 version.json
 

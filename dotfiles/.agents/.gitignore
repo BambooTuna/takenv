@@ -1,0 +1,10 @@
+# find-skills が管理するインストール状態（マシン別。中身は SKILL.md 群として git 管理する）
+.skill-lock.json
+
+# agmsg の runtime データ（メッセージ SQLite、per-team db、ログ等）
+skills/agmsg/db/messages.db
+skills/agmsg/db/*.sqlite
+skills/agmsg/db/*.sqlite-shm
+skills/agmsg/db/*.sqlite-wal
+skills/agmsg/db/teams/
+skills/agmsg/logs/
