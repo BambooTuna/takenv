@@ -2,7 +2,7 @@
 # 追加・更新後は `mise install` で反映する
 [tools]
 # ランタイム
-node = "24.10.0"
+node = "20"
 python = "3.12.13"
 go = "1.23.11"
 rust = "1.87.0"
@@ -39,6 +39,12 @@ tokei = "12.1.2"
 
 # AIエージェント（Claude Code は bootstrap.sh で公式インストーラから導入）
 "npm:@openai/codex" = "latest"
+# エージェント間メッセージング。npm 版は薄いブートストラッパーで、初回 `agmsg` 実行時に
+# ~/.agents/skills/agmsg/ に本体（bash+sqlite）を展開する（team 名 / agent 名を対話設定）
+# NOTE: 週DL<1000 のため aube に typosquat 疑いで拒否される。手動更新時は
+#   AUBE_LOW_DOWNLOAD_THRESHOLD=0 mise install npm:agmsg
+# bootstrap.sh の `setup_mise_tools` では自動的にこの env を付与している。
+"npm:agmsg" = "latest"
 # CLIProxyAPI は docker-compose.yml で管理（eceasy/cli-proxy-api:v7.2.94）
 # btop は CPU 用途では mise 版 (musl 静的、GPU_SUPPORT=false) を使う。
 # GPU マシンでは scripts/gpu-setup が mise 版を uninstall して apt の GPU 対応版に差し替える。

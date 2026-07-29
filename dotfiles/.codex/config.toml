@@ -1,0 +1,30 @@
+model = "gpt-5.6-terra" # Or gpt-5.6-terra, gpt-5.6-luna, you can also use any of the models that we support.
+model_provider = "cliproxyapi"
+
+# Disables all user confirmation prompts for actions. Dangerous—not recommended for Codex beginners. Remove the # to enable.
+# approval_policy = "never"
+
+# Grants unrestricted sandbox access. Dangerous—not recommended for Codex beginners. Remove the # to enable.
+# sandbox_mode = "danger-full-access" 
+
+model_reasoning_effort = "xhigh"
+plan_mode_reasoning_effort = "xhigh"
+
+[model_providers.cliproxyapi]
+base_url = "http://127.0.0.1:8317/v1"
+experimental_bearer_token = "sk-VjlN7FDmwDHPKueOj" # Replace with the API Key you created for Codex in CLIProxyAPI
+name = "OpenAI"
+wire_api = "responses"
+requires_openai_auth = true
+supports_websockets = true # Choose whether to enable websockets as needed
+
+[projects."/home/suzuki_takeo/takenv"]
+trust_level = "trusted"
+
+[tui.model_availability_nux]
+"gpt-5.6-sol" = 1
+
+
+
+[sandbox_workspace_write]
+writable_roots = ["/home/suzuki_takeo/.agents/skills/agmsg/db", "/home/suzuki_takeo/.agents/skills/agmsg/teams", "/home/suzuki_takeo/.agents/skills/agmsg/run"]

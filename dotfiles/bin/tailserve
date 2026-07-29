@@ -10,6 +10,9 @@
   - --public を付けると cloudflared quick tunnel で一時 https://*.trycloudflare.com も併発行
   - ポートが使用中なら +1 しながら空きを探す
   - セキュリティとポート占有のため既定 1 時間で自動終了する (--ttl 30m|4h|1d などで最大24hまで延長可)
+  - serve は独自 index 画面を返し、動画・音声・画像・PDF・HTML はブラウザで inline プレビュー
+    (Range リクエスト対応でシーク再生も可能)。ダウンロードは各行の ⬇ ボタン、
+    または URL に ?download=1 を付ける (Content-Disposition: attachment を強制)
   - dropserve の保存先は環境変数 DROPSERVE_DIR で上書き可
   - dropserve の1ファイル上限は DROPSERVE_MAX_MB (MB, 既定 10240 = 10GB) で上書き可
   - dropserve の受信レート上限は DROPSERVE_RATE_MBPS (MB/s, 未指定=無制限) で指定可
@@ -17,6 +20,8 @@
 """
 import errno
 import functools
+import html
+import io
 import json
 import os
 import re
@@ -28,6 +33,7 @@ import threading
 import time
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, SimpleHTTPRequestHandler, ThreadingHTTPServer
+from string import Template
 
 INBOX = os.environ.get("DROPSERVE_DIR") or os.path.expanduser("~/.dropserve")
 MAX_BYTES = int(os.environ.get("DROPSERVE_MAX_MB") or 10240) << 20
@@ -47,8 +53,12 @@ PAGE = """<!doctype html>
   .item { margin: 12px 0; padding: 10px 14px; background: #313244; border-radius: 8px; display: flex; align-items: center; gap: 10px; }
   .item code { flex: 1; word-break: break-all; font-size: 13px; }
   .item button { background: #89b4fa; color: #1e1e2e; border: 0; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-weight: 600; }
+  .item.fresh { background: #45475a; box-shadow: inset 3px 0 0 #a6e3a1; }
   .item.progress { flex-direction: column; align-items: stretch; gap: 6px; }
-  .item .name { font-size: 14px; word-break: break-all; }
+  .item .head { display: flex; align-items: center; gap: 10px; }
+  .item .name { flex: 1; font-size: 14px; word-break: break-all; }
+  .item .cancel { background: #f38ba8; color: #1e1e2e; border: 0; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-weight: 600; font-size: 12px; }
+  .item .cancel:hover { background: #eba0ac; }
   .bar { height: 6px; background: #45475a; border-radius: 3px; overflow: hidden; }
   .bar .fill { height: 100%; background: #89b4fa; width: 0%; transition: width .15s linear; }
   .status { font-size: 12px; color: #a6adc8; font-variant-numeric: tabular-nums; }
@@ -87,12 +97,12 @@ function fmtEta(sec) {
   return Math.round(sec / 60) + 'm';
 }
 
-// fetch は送信進捗を取れないので XHR を使う
+// fetch は送信進捗を取れないので XHR を使う。呼び出し側で中断できるよう xhr 自体を返す。
 function xhrUpload(file, onProgress) {
-  return new Promise((resolve, reject) => {
+  const xhr = new XMLHttpRequest();
+  const promise = new Promise((resolve, reject) => {
     const fd = new FormData();
     fd.append('file', file);
-    const xhr = new XMLHttpRequest();
     xhr.open('POST', '/upload');
     xhr.upload.onprogress = e => { if (e.lengthComputable) onProgress(e.loaded, e.total); };
     xhr.onload = () => {
@@ -105,15 +115,22 @@ function xhrUpload(file, onProgress) {
     xhr.onabort = () => reject(new Error('中断されました'));
     xhr.send(fd);
   });
+  return { xhr, promise };
 }
 
 async function upload(files) {
   for (const f of files) {
     const div = document.createElement('div');
     div.className = 'item progress';
+    const head = document.createElement('div');
+    head.className = 'head';
     const name = document.createElement('div');
     name.className = 'name';
     name.textContent = f.name;
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'cancel';
+    cancelBtn.textContent = '中断';
+    head.append(name, cancelBtn);
     const bar = document.createElement('div');
     bar.className = 'bar';
     const fill = document.createElement('div');
@@ -122,39 +139,43 @@ async function upload(files) {
     const status = document.createElement('div');
     status.className = 'status';
     status.textContent = '準備中…';
-    div.append(name, bar, status);
+    div.append(head, bar, status);
     log.prepend(div);
 
     // 直近サンプルから指数移動平均で速度を出す (瞬間値だとブレが大きい)
     let lastMs = performance.now(), lastLoaded = 0, ema = 0;
 
+    const req = xhrUpload(f, (loaded, total) => {
+      const now = performance.now();
+      const dt = now - lastMs;
+      if (dt >= 250) {
+        const inst = (loaded - lastLoaded) / dt * 1000;
+        ema = ema ? ema * 0.7 + inst * 0.3 : inst;
+        lastMs = now; lastLoaded = loaded;
+      }
+      const pct = total ? loaded / total * 100 : 0;
+      fill.style.width = pct.toFixed(1) + '%';
+      const rate = ema ? fmtMB(ema) + ' MB/s' : '…';
+      const eta = ema && total ? fmtEta((total - loaded) / ema) : '';
+      status.textContent = fmtMB(loaded) + ' / ' + fmtMB(total) + ' MB  (' + pct.toFixed(1) + '%)  ' + rate + (eta ? '  残り ' + eta : '');
+    });
+    cancelBtn.onclick = () => { cancelBtn.disabled = true; cancelBtn.textContent = '中断中…'; req.xhr.abort(); };
+
     try {
-      const path = await xhrUpload(f, (loaded, total) => {
-        const now = performance.now();
-        const dt = now - lastMs;
-        if (dt >= 250) {
-          const inst = (loaded - lastLoaded) / dt * 1000;
-          ema = ema ? ema * 0.7 + inst * 0.3 : inst;
-          lastMs = now; lastLoaded = loaded;
-        }
-        const pct = total ? loaded / total * 100 : 0;
-        fill.style.width = pct.toFixed(1) + '%';
-        const rate = ema ? fmtMB(ema) + ' MB/s' : '…';
-        const eta = ema && total ? fmtEta((total - loaded) / ema) : '';
-        status.textContent = fmtMB(loaded) + ' / ' + fmtMB(total) + ' MB  (' + pct.toFixed(1) + '%)  ' + rate + (eta ? '  残り ' + eta : '');
-      });
+      const path = await req.promise;
       fill.style.width = '100%';
-      div.className = 'item';
+      div.className = 'item fresh';
       div.innerHTML = '<code></code><button>コピー</button>';
       div.querySelector('code').textContent = path;
       div.querySelector('button').onclick = ev => {
         copyText(path).then(
-          () => { ev.target.textContent = '✓'; },
+          () => { ev.target.textContent = '✓'; div.classList.remove('fresh'); },
           () => { ev.target.textContent = '失敗'; },
         );
         setTimeout(() => ev.target.textContent = 'コピー', 1200);
       };
     } catch (err) {
+      cancelBtn.remove();
       status.className = 'status err';
       status.textContent = '失敗: ' + err.message;
     }
@@ -320,9 +341,234 @@ def _fmt_duration(sec):
 
 # --- serve: ファイル/ディレクトリを配る ---
 
+# ディレクトリインデックス。dropserve と揃えた Catppuccin Mocha 基調のダーク UI。
+INDEX_PAGE = Template("""<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>serve: $title</title>
+<style>
+  body { font-family: system-ui; max-width: 720px; margin: 40px auto; padding: 0 16px; background: #1e1e2e; color: #cdd6f4; }
+  h1 { font-size: 13px; color: #a6adc8; font-weight: normal; word-break: break-all; margin: 0 0 20px; }
+  h1 code { color: #cdd6f4; background: #313244; padding: 3px 8px; border-radius: 4px; }
+  .item { margin: 6px 0; padding: 10px 14px; background: #313244; border-radius: 8px; display: flex; align-items: center; gap: 12px; }
+  .item .icon { flex: 0 0 20px; text-align: center; }
+  .item .name { flex: 1; color: #cdd6f4; text-decoration: none; word-break: break-all; font-size: 14px; }
+  .item a.name:hover { color: #89b4fa; }
+  .item .size { flex: 0 0 auto; font-size: 12px; color: #a6adc8; font-variant-numeric: tabular-nums; }
+  .item .dl { flex: 0 0 auto; background: #89b4fa; color: #1e1e2e; border: 0; border-radius: 6px; padding: 4px 10px; text-decoration: none; font-weight: 600; font-size: 12px; }
+  .item .dl:hover { background: #b4befe; }
+  .empty { color: #a6adc8; font-size: 13px; text-align: center; padding: 40px; }
+</style>
+<h1>📂 <code>$title</code></h1>
+$items
+""")
+
+# 拡張子 → 表示アイコンのラフな分類。判定はディレクトリ index の見た目だけに使う。
+_ICON_MAP = [
+    ("🎬", {"mp4", "mov", "mkv", "webm", "avi", "m4v"}),
+    ("🎵", {"mp3", "wav", "flac", "ogg", "m4a", "aac", "opus"}),
+    ("🖼", {"jpg", "jpeg", "png", "gif", "webp", "svg", "heic", "bmp", "ico", "avif"}),
+    ("🌐", {"html", "htm"}),
+    ("📕", {"pdf"}),
+    ("📦", {"zip", "tar", "gz", "tgz", "bz2", "7z", "rar", "xz"}),
+]
+
+
+def _file_icon(name):
+    ext = os.path.splitext(name)[1].lower().lstrip(".")
+    for icon, exts in _ICON_MAP:
+        if ext in exts:
+            return icon
+    return "📄"
+
+
+def _fmt_size(n):
+    unit = "B"
+    for u in ("B", "KB", "MB", "GB", "TB"):
+        unit = u
+        if n < 1024:
+            break
+        n /= 1024
+    return f"{n:.0f} {unit}" if unit == "B" else f"{n:.1f} {unit}"
+
+
+class _RangedFile:
+    """send_head が返すファイルラッパ。read() で length ぶんまでに切り詰める。
+
+    Range 応答時に SimpleHTTPRequestHandler.copyfile(f, wfile) が f を EOF まで読むと
+    レンジ外まで送ってしまうので、read で残量を管理して EOF を偽装する。
+    """
+
+    def __init__(self, f, length):
+        self.f = f
+        self.remaining = length
+
+    def read(self, n=-1):
+        if self.remaining <= 0:
+            return b""
+        if n is None or n < 0 or n > self.remaining:
+            n = self.remaining
+        data = self.f.read(n)
+        self.remaining -= len(data)
+        return data
+
+    def close(self):
+        return self.f.close()
+
+
 class ServeHandler(SimpleHTTPRequestHandler):
+    """SimpleHTTPRequestHandler に以下を足したハンドラ。
+
+    - Range: bytes= を受け付けて 206 で部分応答する (動画のシーク再生に必要)。
+      Range 非対応のままだと Chrome/Safari が <video> 再生を諦めてダウンロードにフォールバックする
+    - ディレクトリ index を独自 HTML に差し替え、各行に ⬇ ダウンロードボタンを付ける
+    - ?download=1 が付いていれば Content-Disposition: attachment を返す (通常は inline)
+    """
+
     def log_message(self, fmt, *args):
         sys.stderr.write("%s %s\n" % (self.address_string(), fmt % args))
+
+    def send_head(self):
+        parts = urllib.parse.urlsplit(self.path)
+        download = "download" in urllib.parse.parse_qs(parts.query)
+        path = self.translate_path(self.path)
+
+        if os.path.isdir(path):
+            if not parts.path.endswith("/"):
+                # ディレクトリは末尾スラッシュを強制 (相対リンクが基点を誤らないため)
+                self.send_response(301)
+                new = (parts.scheme, parts.netloc, parts.path + "/", parts.query, parts.fragment)
+                self.send_header("Location", urllib.parse.urlunsplit(new))
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return None
+            for index in ("index.html", "index.htm"):
+                candidate = os.path.join(path, index)
+                if os.path.isfile(candidate):
+                    path = candidate
+                    break
+            else:
+                return self.list_directory(path)
+
+        if path.endswith("/"):
+            self.send_error(404, "File not found")
+            return None
+
+        try:
+            f = open(path, "rb")
+        except OSError:
+            self.send_error(404, "File not found")
+            return None
+
+        try:
+            fs = os.fstat(f.fileno())
+            file_size = fs.st_size
+            ctype = self.guess_type(path)
+
+            start, end = 0, max(file_size - 1, 0)
+            partial = False
+            range_hdr = self.headers.get("Range")
+            if range_hdr and range_hdr.startswith("bytes="):
+                # 複数レンジ (bytes=0-99,200-299) は使われる場面が実質ないので最初の1件だけ扱う
+                spec = range_hdr[6:].split(",", 1)[0].strip()
+                m = re.match(r"^(\d*)-(\d*)$", spec)
+                ok = bool(m)
+                if ok:
+                    s, e = m.group(1), m.group(2)
+                    if s:
+                        start = int(s)
+                        end = min(int(e), file_size - 1) if e else file_size - 1
+                    elif e:
+                        # `bytes=-N` は末尾 N バイト
+                        n = int(e)
+                        start = max(0, file_size - n)
+                        end = file_size - 1
+                    else:
+                        ok = False
+                if not ok or start > end or start >= file_size:
+                    self.send_response(416)
+                    self.send_header("Content-Range", f"bytes */{file_size}")
+                    self.send_header("Content-Length", "0")
+                    self.end_headers()
+                    f.close()
+                    return None
+                partial = True
+
+            length = end - start + 1
+
+            self.send_response(206 if partial else 200)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(length))
+            self.send_header("Accept-Ranges", "bytes")
+            self.send_header("Last-Modified", self.date_time_string(int(fs.st_mtime)))
+            if partial:
+                self.send_header("Content-Range", f"bytes {start}-{end}/{file_size}")
+            if download:
+                # RFC 5987 の filename* で UTF-8 ファイル名にも対応
+                encoded = urllib.parse.quote(os.path.basename(path))
+                self.send_header(
+                    "Content-Disposition",
+                    f"attachment; filename*=UTF-8''{encoded}",
+                )
+            self.end_headers()
+
+            if start:
+                f.seek(start)
+            return _RangedFile(f, length)
+        except BaseException:
+            f.close()
+            raise
+
+    def list_directory(self, path):
+        try:
+            names = os.listdir(path)
+        except OSError:
+            self.send_error(403, "No permission to list directory")
+            return None
+        # ディレクトリを先頭、次にケース非依存のアルファベット順
+        names.sort(key=lambda a: (not os.path.isdir(os.path.join(path, a)), a.lower()))
+
+        display = urllib.parse.unquote(self.path.split("?", 1)[0], errors="replace")
+
+        rows = []
+        if display != "/":
+            rows.append(
+                '<div class="item"><span class="icon">📁</span>'
+                '<a class="name" href="../">../</a></div>'
+            )
+        for name in names:
+            full = os.path.join(path, name)
+            is_dir = os.path.isdir(full)
+            href = urllib.parse.quote(name) + ("/" if is_dir else "")
+            esc_name = html.escape(name + ("/" if is_dir else ""))
+            if is_dir:
+                rows.append(
+                    f'<div class="item"><span class="icon">📁</span>'
+                    f'<a class="name" href="{href}">{esc_name}</a></div>'
+                )
+            else:
+                try:
+                    size = os.path.getsize(full)
+                except OSError:
+                    size = 0
+                rows.append(
+                    '<div class="item">'
+                    f'<span class="icon">{_file_icon(name)}</span>'
+                    f'<a class="name" href="{href}">{esc_name}</a>'
+                    f'<span class="size">{_fmt_size(size)}</span>'
+                    f'<a class="dl" href="{href}?download=1" title="ダウンロード">⬇</a>'
+                    '</div>'
+                )
+
+        items_html = "\n".join(rows) or '<div class="empty">空のディレクトリ</div>'
+        body = INDEX_PAGE.substitute(
+            title=html.escape(display), items=items_html
+        ).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        return io.BytesIO(body)
 
 
 def run_serve(argv):

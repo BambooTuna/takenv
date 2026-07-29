@@ -39,6 +39,9 @@ return {
 	-- color_scheme = "GruvboxDark (Gogh)",-- 自分の好きなテーマ探す https://wezfurlong.org/wezterm/colorschemes/index.html
 	hide_tab_bar_if_only_one_tab = true,
 	adjust_window_size_when_changing_font_size = false,
+	-- Kitty graphics protocol の描画を許可 (デフォルト false)。
+	-- herdr-browser プラグインが agent-browser のスクショを APC で流し込むのに必要。
+	enable_kitty_graphics = true,
 	-- タブ・ペイン操作は herdr に任せるため、デフォルトキーバインドを全無効化。
 	-- WezTerm 層に必要な最小セットだけ再定義する。
 	disable_default_key_bindings = true,

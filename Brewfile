@@ -32,6 +32,8 @@ brew 'nkf'
 brew 'mosh'
 brew 'terminal-notifier'
 brew 'gogcli'
+### AWS SSM Session Manager (aws ssm start-session 実行に必要な公式プラグイン)
+cask 'session-manager-plugin'
 
 ### ls 代替 (exa はメンテ終了で formula 削除済みのため eza を使用)
 brew 'eza'

@@ -61,9 +61,10 @@ setup_linux() {
   log "apt パッケージ"
   $SUDO apt-get update -y
   # python-is-python3: gcloud SDK の install.sh 等が `python` コマンドを直接呼ぶため必要
+  # sqlite3: agmsg (エージェント間メッセージング) が SQLite ファイルを直接叩くため必要
   DEBIAN_FRONTEND=noninteractive $SUDO apt-get install -y \
     git curl wget unzip zsh build-essential ca-certificates locales gnupg \
-    jq bat tree postgresql-client default-mysql-client python-is-python3
+    jq bat tree postgresql-client default-mysql-client python-is-python3 sqlite3
 
   if ! locale -a 2>/dev/null | grep -qi 'ja_JP.utf8'; then
     $SUDO locale-gen ja_JP.UTF-8
@@ -121,6 +122,36 @@ setup_linux() {
     curl -fsSL https://tailscale.com/install.sh | sh
   fi
 
+  log "AWS SSM Session Manager Plugin"
+  # aws ssm start-session の実行に必要。aws CLI とは別配布 (mise/aqua は darwin のみ対応)。
+  if command -v session-manager-plugin >/dev/null 2>&1; then
+    ok "インストール済み"
+  else
+    local ssm_arch=""
+    case "$(dpkg --print-architecture)" in
+      amd64) ssm_arch=ubuntu_64bit ;;
+      arm64) ssm_arch=ubuntu_arm64 ;;
+      *) warn "未対応アーキ: $(dpkg --print-architecture) — 手動導入してください" ;;
+    esac
+    if [ -n "$ssm_arch" ]; then
+      local ssm_tmp
+      ssm_tmp="$(mktemp -d)"
+      curl -fsSL "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/${ssm_arch}/session-manager-plugin.deb" \
+        -o "$ssm_tmp/session-manager-plugin.deb"
+      $SUDO dpkg -i "$ssm_tmp/session-manager-plugin.deb"
+      rm -rf "$ssm_tmp"
+    fi
+  fi
+
+  log "tc fq_codel (SSH と docker pull の帯域競合対策)"
+  # eth0 の qdisc を fq_codel に置換して bufferbloat を抑え、tailscale ssh を守る。
+  # WSL 以外の Linux でも無害。eth0 が無い環境 (コンテナ内など) はスキップ。
+  if [ -e /sys/class/net/eth0 ] && [ -z "${TAKENV_IN_CONTAINER:-}" ] && [ ! -f /.dockerenv ]; then
+    $SUDO "$REPO_DIR/scripts/tc-fqcodel" install
+  else
+    warn "eth0 が無い or コンテナ内のためスキップ"
+  fi
+
   log "ログインシェルを zsh に変更"
   if [ "$(basename "${SHELL:-}")" = "zsh" ]; then
     ok "設定済み"
@@ -162,7 +193,9 @@ setup_mise_tools() {
   log "mise install (ランタイム・CLIツール)"
   # npm バックエンド (codex) が node を要求するため node を先に入れる
   mise install node
-  mise install
+  # mise の npm バックエンド (aube) は週DL<1000のパッケージを typosquat 疑いで拒否する。
+  # agmsg (現状 ~800/週) を通すため install 実行時のみ閾値を下げる。他パッケージへの影響なし。
+  AUBE_LOW_DOWNLOAD_THRESHOLD=0 mise install
   ok "mise のツールを導入しました"
 }
 
@@ -193,25 +226,27 @@ print_manual_steps() {
   cat <<'EOS'
   1. シェルを開き直す（exec zsh -l）
   2. SSH 鍵の作成と GitHub 登録: git/README.md 参照
+  3. agmsg 初回セットアップ: `agmsg` を一度実行し、team 名 / agent 名を対話設定する
+     （~/.agents/skills/agmsg/ にスキル本体が展開される。Claude Code / Codex は再起動）
 EOS
   if [ "$OS" = "Linux" ]; then
     cat <<'EOS'
-  3. Tailscale に参加（SSH 受付も有効化）: make tailscale-up
+  4. Tailscale に参加（SSH 受付も有効化）: make tailscale-up
      → Mac から herdr --remote <user>@<このホスト名> で接続できる
 EOS
     if grep -qi microsoft /proc/version 2>/dev/null; then
       cat <<'EOS'
-  4. Windows 母艦側の設定（自動再起動抑止・WSL 自動起動・.wslconfig 反映）:
+  5. Windows 母艦側の設定（自動再起動抑止・WSL 自動起動・.wslconfig 反映）:
      Windows PowerShell を管理者で開いて windows/bootstrap.ps1 を実行
 EOS
     fi
   fi
   if [ "$OS" = "Darwin" ]; then
     cat <<'EOS'
-  3. Karabiner-Elements の権限承認（初回のみ）
+  4. Karabiner-Elements の権限承認（初回のみ）
      - システム設定 > 一般 > ログイン項目と機能拡張 > ドライバ機能拡張 を有効化
      - システム設定 > プライバシーとセキュリティ > 入力監視 を許可
-  4. cask が無い/機能しないアプリ: LINE (App Store), tldv (https://tldv.io), Amazon Music
+  5. cask が無い/機能しないアプリ: LINE (App Store), tldv (https://tldv.io), Amazon Music
 EOS
   fi
   printf '\n  環境の健全性チェック: make doctor\n\n'

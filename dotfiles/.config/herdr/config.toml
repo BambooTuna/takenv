@@ -25,6 +25,8 @@ navigate_pane_down = "down"
 [experimental]
 # herdr ペイン内から herdr --remote (リモートマシンへの接続) を許可する
 allow_nested = true
+# ペインへ画像フレームを送る Kitty graphics 経路を有効化 (herdr-browser プラグイン用)
+kitty_graphics = true
 
 [theme]
 name = "terminal"

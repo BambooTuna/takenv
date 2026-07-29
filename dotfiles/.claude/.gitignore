@@ -6,6 +6,7 @@ statsig
 todos
 shell-snapshots
 history.jsonl
+history.jsonl.*
 runtime
 debug
 plans

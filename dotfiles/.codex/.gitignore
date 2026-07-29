@@ -1,0 +1,22 @@
+# codex CLI が実行時に書き出すもの（丸ごとリンクしているため .gitignore で除外する）
+.tmp
+tmp
+skills
+installation_id
+version.json
+
+# 内部状態 sqlite（memories/logs/goals/state 等、番号付きで増える）
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# ログ・キャッシュ・認証情報
+auth.json
+log
+logs
+sessions
+history.jsonl
+session_index.jsonl
+shell_snapshots
+models_cache.json
+.sandbox_migration

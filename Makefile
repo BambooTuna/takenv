@@ -1,8 +1,9 @@
 .DEFAULT_GOAL := help
-.PHONY: link unlink doctor tailscale-up gpu-setup up help
+.PHONY: link unlink doctor tailscale-up gpu-setup btop-gpu tc-qos tc-qos-uninstall up help
 
 # リンク定義: <リンク先>:<リポジトリ内の相対パス>
-# herdr/mise/codex はディレクトリにログ・認証情報等も置かれるため設定ファイルのみリンクする
+# herdr/mise はディレクトリにログ・認証情報等も置かれるため設定ファイルのみリンクする
+# .claude / .codex は丸ごとリンクし、実行時データは各配下の .gitignore で除外する
 DOTFILES := \
 	$(HOME)/.zshrc:dotfiles/.zshrc \
 	$(HOME)/.rc:dotfiles/.rc \
@@ -11,11 +12,12 @@ DOTFILES := \
 	$(HOME)/.config/nvim:dotfiles/.config/nvim \
 	$(HOME)/.config/wezterm:dotfiles/.config/wezterm \
 	$(HOME)/.config/karabiner:dotfiles/.config/karabiner \
+	$(HOME)/.config/cli-proxy-api:dotfiles/.config/cli-proxy-api \
 	$(HOME)/.ssh/config:dotfiles/.ssh/config \
 	$(HOME)/.config/herdr/config.toml:dotfiles/.config/herdr/config.toml \
 	$(HOME)/.config/mise/config.toml:dotfiles/.config/mise/config.toml \
 	$(HOME)/.claude:dotfiles/.claude \
-	$(HOME)/.codex/prompts:dotfiles/.codex/prompts \
+	$(HOME)/.codex:dotfiles/.codex \
 	$(HOME)/.gogcli:dotfiles/.gogcli \
 	$(HOME)/.local/bin/osc52-yank:dotfiles/bin/osc52-yank \
 	$(HOME)/.local/bin/serve:dotfiles/bin/tailserve \
@@ -23,7 +25,7 @@ DOTFILES := \
 
 # 環境変数 TAKENV_LINK_BACKUP=1 で既存ファイルを .bak に退避してリンクを張る（bootstrap.sh が使用）
 link:
-	@mkdir -p ~/.config/herdr ~/.config/mise ~/.codex ~/.local/bin ~/.ssh
+	@mkdir -p ~/.config/herdr ~/.config/mise ~/.local/bin ~/.ssh
 	@chmod 700 ~/.ssh
 	@for pair in $(DOTFILES); do \
 		dst="$${pair%%:*}"; src="$(PWD)/$${pair##*:}"; \
@@ -75,6 +77,19 @@ doctor:
 	else \
 		echo "  ✓ 宣言済みツールはすべて導入済みです"; \
 	fi; \
+	if [ "$$(uname -s)" = "Linux" ] && [ -e /sys/class/net/eth0 ] && [ ! -f /.dockerenv ]; then \
+		echo "== tc fq_codel (SSH 帯域競合対策) =="; \
+		if systemctl is-enabled tc-fqcodel.service >/dev/null 2>&1; then \
+			echo "  ✓ tc-fqcodel.service が enable"; \
+		else \
+			echo "  ✗ tc-fqcodel.service が未導入 (sudo ./scripts/tc-fqcodel install)"; status=1; \
+		fi; \
+		if tc qdisc show dev eth0 2>/dev/null | grep -q fq_codel; then \
+			echo "  ✓ eth0 に fq_codel が適用済み"; \
+		else \
+			echo "  ✗ eth0 に fq_codel が未適用 (sudo ./scripts/tc-fqcodel apply)"; status=1; \
+		fi; \
+	fi; \
 	if [ "$$(uname -s)" = "Darwin" ]; then \
 		echo "== Homebrew =="; \
 		if [ "$$TAKENV_SKIP_CASKS" = "1" ]; then \
@@ -106,6 +121,29 @@ tailscale-up:
 gpu-setup:
 	@./scripts/gpu-setup
 
+# btop の GPU 対応版 (apt 版) だけを入れ直す。gpu-setup と違い docker daemon には触らないので、
+# GPU で動いている処理やコンテナに影響なく実行できる。
+# 背景: mise 経由の btop は musl 静的リンクで GPU_SUPPORT=false 固定のため、bootstrap.sh の
+# `mise install` が走ると CPU 版が復活して PATH で apt 版に勝ってしまう。都度この target で戻す。
+btop-gpu:
+	@sudo apt-get install -y btop
+	@sudo rm -f /usr/local/bin/btop
+	@command -v mise >/dev/null 2>&1 && mise uninstall btop >/dev/null 2>&1 || true
+	@btop --version | head -1
+
+# eth0 の qdisc を fq_codel に置換して SSH と docker pull の帯域競合を公平化する。
+# bootstrap.sh で自動導入済みだが、単独で状態確認・再適用したいときの入口。
+# systemd unit がブート毎に apply を走らせるので、手動 apply は WSL 再起動なしで
+# 反映したいときや qdisc がずれたとき用。
+tc-qos:
+	@./scripts/tc-fqcodel status
+	@echo
+	@echo "再適用: sudo ./scripts/tc-fqcodel apply"
+	@echo "再インストール: sudo ./scripts/tc-fqcodel install"
+
+tc-qos-uninstall:
+	@sudo ./scripts/tc-fqcodel uninstall
+
 # 普段起動しておきたい常駐サービスを foreground で一括起動する。
 # 各サービスは背景ジョブとして走り、ログはこの端末にまとめて流れる。
 # Ctrl+C ですべて止まる。追加するサービスは scripts/up の下部に1行足す。
@@ -125,9 +163,15 @@ help:
 	@echo ""
 	@echo "オプション（マシン依存で bootstrap から切り出したもの）:"
 	@echo "  make gpu-setup - NVIDIA GPU をコンテナ／btop から使えるようにする（Container Toolkit + docker 連携 + btop GPU 表示）"
+	@echo "  make btop-gpu  - btop の GPU 対応版 (apt 版) だけを入れ直す（docker には触らない）"
+	@echo "  make tc-qos    - eth0 の fq_codel 状態確認（bootstrap で自動導入・再適用は sudo apply）"
+	@echo "  make tc-qos-uninstall - fq_codel の systemd unit を外してカーネル既定に戻す"
 	@echo ""
 	@echo "常駐サービス:"
 	@echo "  make up      - 普段起動しておきたい常駐サービスを foreground で一括起動 (Ctrl+C で全停止)"
 	@echo "                 サービス追加は scripts/up に1行足す"
+	@echo ""
+	@echo "別プロジェクト:"
+	@echo "  AivisSpeech/ - 日本語 TTS Engine (使うときだけ起動)。make -C AivisSpeech help"
 	@echo ""
 	@echo "  make help    - このヘルプを表示"
