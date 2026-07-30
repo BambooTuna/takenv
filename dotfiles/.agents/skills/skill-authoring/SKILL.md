@@ -34,7 +34,7 @@ Runtime:
 | 依存する資産 | 一般的な CLI / ツール / 汎用ワークフロー | そのリポジトリ内のファイル (`DESIGN.md`, `cases/`, 特定ライブラリ設定) |
 | 対象者 | 自分だけ (dotfiles は個人) | チーム全員 (repo 共有) |
 | 再利用性 | 他プロジェクトでも同じ手順で走る | そのプロジェクトでしか意味を持たない |
-| 例 | `japanese-tech-writing`, `xurl`, `browser`, `issue-triage` | `bak.pj/react-doctor`, `sekine-be/inquiry-response` |
+| 例 | `japanese-tech-writing`, `gogcli`, `browser`, `issue-triage` | `bak.pj/react-doctor`, `sekine-be/inquiry-response` |
 
 **迷ったら中央**。後から「これ repo 固有だった」と気づいたら repo-local に降格すれば良い。逆（repo → 中央）はもっと簡単（下記「昇格手順」）。
 
@@ -54,11 +54,11 @@ description: <発火条件 + 用途を1〜3文で。「〜のときに使う」�
 ```
 
 ### name の規則
-- **kebab-case**: `x-draft-batch`, `japanese-tech-writing`（アンダースコアは使わない）
+- **kebab-case**: `zero-base-check`, `japanese-tech-writing`（アンダースコアは使わない）
 - **短く specific**: `authoring-skills` より `skill-authoring` のように動作対象が読める形
 - **ネームスペース区切りは `:`**: `docs:compact`, `slide:marp` のように用途を階層化したいとき
 - **既存名との衝突禁止**: Codex `.system/` にある `skill-creator`, `skill-installer`, `imagegen` などを避ける
-- **プレフィックス活用**: 個人ペルソナ系は `x-*` (X運用系), プロジェクト固有は `<project>-*` など
+- **プレフィックス活用**: プロジェクト固有は `<project>-*` など
 
 ### description の書き方
 Claude Code / Codex は description を見て「今この skill を使うべきか」を判断するため、以下を必ず含める:
@@ -68,6 +68,9 @@ Claude Code / Codex は description を見て「今この skill を使うべき�
 
 悪い例: `description: 便利ツール`
 良い例: `description: GitHub Issueを棚卸し・トリアージするスキル。「issue トリアージ」「issue 棚卸し」で起動。個別issueの調査は subagent で並列化する。`
+
+### 薄さの基準
+SKILL.md 本文は薄く保つ。LLM なら指示なしでも当然やる判断プロセス（「まず状況を整理する」等）は明文化しない。残す価値があるのは、ツールの正しい呼び出し方・環境や組織固有の規範・過去の実事故に基づくガード・実測に基づく数値基準の4種のみ。2026年の SkillsBench 等でスキルは厳選・簡潔なほど精度が上がることが定量的に示されている。サブエージェント起動プロンプトは本体に全文埋め込まず `agents/*.md` に外出しし、本体の長大化を防ぐ。
 
 ## 中央スキル作成の手順
 

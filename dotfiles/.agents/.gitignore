@@ -8,3 +8,5 @@ skills/agmsg/db/*.sqlite-shm
 skills/agmsg/db/*.sqlite-wal
 skills/agmsg/db/teams/
 skills/agmsg/logs/
+skills/agmsg/run/
+skills/agmsg/teams/

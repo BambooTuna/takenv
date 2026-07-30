@@ -32,9 +32,6 @@
 !/bin/
 !/bin/**
 
-# x-ops スキルの個人ペルソナは公開しない
-/.agents/skills/x-ops/persona/
-
 # Claude Code デーモンのランタイム状態（実行時に生成される）
 /.claude/daemon/
 /.claude/daemon.*
