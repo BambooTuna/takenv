@@ -143,15 +143,6 @@ setup_linux() {
     fi
   fi
 
-  log "tc fq_codel (SSH と docker pull の帯域競合対策)"
-  # eth0 の qdisc を fq_codel に置換して bufferbloat を抑え、tailscale ssh を守る。
-  # WSL 以外の Linux でも無害。eth0 が無い環境 (コンテナ内など) はスキップ。
-  if [ -e /sys/class/net/eth0 ] && [ -z "${TAKENV_IN_CONTAINER:-}" ] && [ ! -f /.dockerenv ]; then
-    $SUDO "$REPO_DIR/scripts/tc-fqcodel" install
-  else
-    warn "eth0 が無い or コンテナ内のためスキップ"
-  fi
-
   log "ログインシェルを zsh に変更"
   if [ "$(basename "${SHELL:-}")" = "zsh" ]; then
     ok "設定済み"

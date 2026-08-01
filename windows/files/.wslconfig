@@ -2,5 +2,29 @@
 instanceIdleTimeout=-1
 
 [wsl2]
+memory=40GB
+processors=12
+swap=16GB
 vmIdleTimeout=-1
-memory=12GB
+nestedVirtualization=true
+
+# mirrored ネットワーキング: Windows の NIC を WSL が直接借りる (二重 NAT 解消)。
+# 目的:
+#   1. tailscale の hole punching を成立させ DERP 経由から direct UDP に切替える
+#   2. Hyper-V vSwitch 由来のバッファ・遅延を排除する
+#   3. localhost が Windows と共有され Windows↔WSL 双方向で透過する
+# 前提: WSL 2.0.5+ / Windows 11。
+# 副作用: WSL と Windows で同じポートは同時に握れない (ポート衝突)。
+networkingMode=mirrored
+
+# mirrored の伴走設定 (Microsoft 推奨):
+#   dnsTunneling: DNS を Windows の resolver 直結にして mirrored 下で名前解決を安定化
+#   firewall: Windows Defender Firewall のルールを WSL 内トラフィックにも適用
+#   autoProxy: Windows のプロキシ設定 (WinHTTP) を WSL 内 HTTP クライアントに継承
+dnsTunneling=true
+firewall=true
+autoProxy=true
+
+[experimental]
+autoMemoryReclaim=gradual
+sparseVhd=true

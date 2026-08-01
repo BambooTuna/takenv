@@ -34,7 +34,7 @@
     ],
     "defaultMode": "auto"
   },
-  "model": "claude-opus-4-7[1m]",
+  "model": "sonnet[1m]",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -84,5 +84,6 @@
   "skipWorkflowUsageWarning": true,
   "theme": "dark",
   "teammateMode": "in-process",
-  "skipAutoPermissionPrompt": true
+  "skipAutoPermissionPrompt": true,
+  "skipDangerousModePermissionPrompt": true
 }
