@@ -1,0 +1,40 @@
+#!/bin/sh
+# SSH ローカルポートフォワードをフォアグラウンドで張る (Ctrl+C で切断)。
+# リモートの開発サーバーを手元の localhost として見るための専用コマンド。
+#
+# 使い方:
+#   fwd <host> <port[,port...]> [user]
+#
+# 例:
+#   fwd desktop.taild59847.ts.net 3100,8100        # sekine の FE/BE を手元 localhost へ
+#   fwd desktop.taild59847.ts.net 3100,8100,5436   # DB も覗くとき
+#   fwd some-host 8080 otheruser                   # ユーザー指定
+#
+# ポートはローカル・リモートとも同じ番号で対応付ける。
+# デフォルトユーザーは $FWD_DEFAULT_USER (未設定なら suzuki_takeo)。
+
+set -eu
+
+if [ $# -lt 2 ]; then
+  echo "usage: fwd <host> <port[,port...]> [user]" >&2
+  exit 1
+fi
+
+host=$1
+ports=$2
+user=${3:-${FWD_DEFAULT_USER:-suzuki_takeo}}
+
+fwd_args=""
+for p in $(printf '%s' "$ports" | tr ',' ' '); do
+  case "$p" in
+    ''|*[!0-9]*)
+      echo "fwd: 不正なポート番号です: $p" >&2
+      exit 1
+      ;;
+  esac
+  fwd_args="$fwd_args -L ${p}:localhost:${p}"
+done
+
+echo "fwd: ${ports} -> ${user}@${host} (Ctrl+C で終了)"
+# shellcheck disable=SC2086
+exec ssh -N $fwd_args "${user}@${host}"
