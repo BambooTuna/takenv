@@ -1,0 +1,56 @@
+#!/bin/sh
+# 指定ポートを占有しているローカルプロセスを表示して解放 (kill) する。
+#
+# 使い方:
+#   killport <port[,port...]> [port...]
+#
+# 例:
+#   killport 8080,8001      # カンマ区切り
+#   killport 3000           # 単発
+#   killport 3100 8100      # スペース区切りでも可
+#   killport -9 8100        # SIGKILL で強制解放 (通常は SIGTERM)
+#
+# 対象の PID・コマンド・作業ディレクトリを表示してから kill する。
+# 自分のユーザーのプロセスのみが対象 (lsof が他ユーザー分を返さないため)。
+
+set -eu
+
+signal="-TERM"
+if [ "${1:-}" = "-9" ]; then
+  signal="-KILL"
+  shift
+fi
+
+if [ $# -lt 1 ]; then
+  echo "usage: killport [-9] <port[,port...]> [port...]" >&2
+  exit 1
+fi
+
+# カンマ区切り・スペース区切りの両方を許容してポート一覧に展開する
+ports=$(printf '%s ' "$@" | tr ',' ' ')
+
+status=0
+for p in $ports; do
+  case "$p" in
+    ''|*[!0-9]*)
+      echo "killport: 不正なポート番号です: $p" >&2
+      status=1
+      continue
+      ;;
+  esac
+
+  pids=$(lsof -t -i ":$p" 2>/dev/null | sort -u || true)
+  if [ -z "$pids" ]; then
+    echo "killport: :$p は空いています"
+    continue
+  fi
+
+  for pid in $pids; do
+    cmd=$(ps -o comm= -p "$pid" 2>/dev/null || echo '?')
+    cwd=$(readlink "/proc/$pid/cwd" 2>/dev/null || echo '?')
+    echo "killport: :$p -> kill $signal $pid ($cmd, cwd=$cwd)"
+    kill "$signal" "$pid" || status=1
+  done
+done
+
+exit $status
