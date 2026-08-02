@@ -52,3 +52,6 @@
 **/.env.*
 !**/.env.example
 **/.credentials.json
+
+# cli-proxy-api の config は生 API キーを含むため管理外
+/.config/cli-proxy-api/

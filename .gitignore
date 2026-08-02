@@ -7,3 +7,11 @@ tmp/
 .env
 .env.*
 !.env.example
+
+# 生の API キーを含む (bcrypt secret-key + 平文 api-keys)
+/dotfiles/.config/cli-proxy-api/
+
+# takenv 直下に置いている独立プロジェクト (別リポで管理)
+/irodori-tts/
+/lt-slides/
+/services/
