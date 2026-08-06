@@ -61,10 +61,9 @@ setup_linux() {
   log "apt パッケージ"
   $SUDO apt-get update -y
   # python-is-python3: gcloud SDK の install.sh 等が `python` コマンドを直接呼ぶため必要
-  # sqlite3: agmsg (エージェント間メッセージング) が SQLite ファイルを直接叩くため必要
   DEBIAN_FRONTEND=noninteractive $SUDO apt-get install -y \
     git curl wget unzip zsh build-essential ca-certificates locales gnupg \
-    jq bat tree postgresql-client default-mysql-client python-is-python3 sqlite3
+    jq bat tree postgresql-client default-mysql-client python-is-python3
 
   if ! locale -a 2>/dev/null | grep -qi 'ja_JP.utf8'; then
     $SUDO locale-gen ja_JP.UTF-8
@@ -184,9 +183,7 @@ setup_mise_tools() {
   log "mise install (ランタイム・CLIツール)"
   # npm バックエンド (codex) が node を要求するため node を先に入れる
   mise install node
-  # mise の npm バックエンド (aube) は週DL<1000のパッケージを typosquat 疑いで拒否する。
-  # agmsg (現状 ~800/週) を通すため install 実行時のみ閾値を下げる。他パッケージへの影響なし。
-  AUBE_LOW_DOWNLOAD_THRESHOLD=0 mise install
+  mise install
   ok "mise のツールを導入しました"
 }
 
@@ -217,27 +214,25 @@ print_manual_steps() {
   cat <<'EOS'
   1. シェルを開き直す（exec zsh -l）
   2. SSH 鍵の作成と GitHub 登録: git/README.md 参照
-  3. agmsg 初回セットアップ: `agmsg` を一度実行し、team 名 / agent 名を対話設定する
-     （~/.agents/skills/agmsg/ にスキル本体が展開される。Claude Code / Codex は再起動）
 EOS
   if [ "$OS" = "Linux" ]; then
     cat <<'EOS'
-  4. Tailscale に参加（SSH 受付も有効化）: make tailscale-up
+  3. Tailscale に参加（SSH 受付も有効化）: make tailscale-up
      → Mac から herdr --remote <user>@<このホスト名> で接続できる
 EOS
     if grep -qi microsoft /proc/version 2>/dev/null; then
       cat <<'EOS'
-  5. Windows 母艦側の設定（自動再起動抑止・WSL 自動起動・.wslconfig 反映）:
+  4. Windows 母艦側の設定（自動再起動抑止・WSL 自動起動・.wslconfig 反映）:
      Windows PowerShell を管理者で開いて windows/bootstrap.ps1 を実行
 EOS
     fi
   fi
   if [ "$OS" = "Darwin" ]; then
     cat <<'EOS'
-  4. Karabiner-Elements の権限承認（初回のみ）
+  3. Karabiner-Elements の権限承認（初回のみ）
      - システム設定 > 一般 > ログイン項目と機能拡張 > ドライバ機能拡張 を有効化
      - システム設定 > プライバシーとセキュリティ > 入力監視 を許可
-  5. cask が無い/機能しないアプリ: LINE (App Store), tldv (https://tldv.io), Amazon Music
+  4. cask が無い/機能しないアプリ: LINE (App Store), tldv (https://tldv.io), Amazon Music
 EOS
   fi
   printf '\n  環境の健全性チェック: make doctor\n\n'

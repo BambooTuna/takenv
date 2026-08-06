@@ -30,10 +30,9 @@ trust_level = "trusted"
 [projects."/home/suzuki_takeo/github/reflllc/bak.pj"]
 trust_level = "trusted"
 
+[projects."/tmp"]
+trust_level = "trusted"
+
 [tui.model_availability_nux]
-"gpt-5.6-sol" = 3
+"gpt-5.6-sol" = 4
 
-
-
-[sandbox_workspace_write]
-writable_roots = ["/home/suzuki_takeo/.agents/skills/agmsg/db", "/home/suzuki_takeo/.agents/skills/agmsg/teams", "/home/suzuki_takeo/.agents/skills/agmsg/run"]
