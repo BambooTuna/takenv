@@ -32,6 +32,9 @@
 !/bin/
 !/bin/**
 
+# codex plugin のランタイム状態（sqlite 等、実行時に生成される）
+/.codex/state/
+
 # Claude Code デーモンのランタイム状態（実行時に生成される）
 /.claude/daemon/
 /.claude/daemon.*
