@@ -1,0 +1,182 @@
+#!/usr/bin/env bash
+# disk-tidy — periodic dev-environment cleanup
+#
+# Usage:
+#   disk-tidy docker     [--yes]
+#   disk-tidy worktrees  [--yes] [--days N]
+#   disk-tidy all        [--yes] [--days N]
+#
+# Default is dry-run. Pass --yes to actually delete.
+#
+# worktrees: scans ~/.herdr/worktrees/*/*/ and marks a worktree for
+# deletion when ALL of these hold:
+#   - HEAD is an ancestor of origin/<default-branch>  (= merged)
+#   - HEAD commit is older than N days (default 30)
+#   - working tree has no uncommitted changes
+# Squash-merged branches are not detected (ancestor test fails); accept.
+
+set -euo pipefail
+
+DAYS=30
+YES=0
+CMD=""
+
+usage() {
+  sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    docker|worktrees|all) CMD="$1"; shift ;;
+    --yes|-y)             YES=1; shift ;;
+    --days)               DAYS="${2:?--days needs a value}"; shift 2 ;;
+    --help|-h)            usage; exit 0 ;;
+    *) echo "unknown arg: $1" >&2; usage; exit 2 ;;
+  esac
+done
+[[ -z "$CMD" ]] && { usage; exit 2; }
+
+info()  { printf '\033[36m==>\033[0m %s\n' "$*"; }
+warn()  { printf '\033[33m!!\033[0m  %s\n' "$*"; }
+label() { [[ $YES -eq 1 ]] && printf 'RUN  ' || printf 'DRY  '; }
+
+# ---------- docker ----------
+
+tidy_docker() {
+  if ! command -v docker >/dev/null; then
+    warn "docker not found, skipping"
+    return 0
+  fi
+
+  info "docker current usage:"
+  docker system df 2>/dev/null || true
+  echo
+
+  info "$(label)docker builder prune -af"
+  [[ $YES -eq 1 ]] && docker builder prune -af
+
+  info "$(label)docker image prune -a -f"
+  [[ $YES -eq 1 ]] && docker image prune -a -f
+
+  if [[ $YES -eq 1 ]]; then
+    echo
+    info "after:"
+    docker system df 2>/dev/null || true
+  else
+    echo
+    warn "dry-run. re-run with --yes to actually prune."
+  fi
+}
+
+# ---------- worktrees ----------
+
+# Print default remote branch ref for a worktree (e.g. "origin/main").
+default_ref_for() {
+  local wt="$1" ref
+  ref=$(git -C "$wt" symbolic-ref -q refs/remotes/origin/HEAD 2>/dev/null | sed 's|^refs/remotes/||') || true
+  if [[ -z "$ref" ]]; then
+    for cand in main master develop; do
+      if git -C "$wt" rev-parse --verify --quiet "origin/$cand" >/dev/null; then
+        ref="origin/$cand"; break
+      fi
+    done
+  fi
+  echo "$ref"
+}
+
+# Print the main worktree path (the parent clone) for any worktree in the repo.
+main_worktree_for() {
+  git -C "$1" worktree list --porcelain 2>/dev/null | awk '/^worktree /{print $2; exit}'
+}
+
+tidy_worktrees() {
+  local root="$HOME/.herdr/worktrees"
+  if [[ ! -d "$root" ]]; then
+    info "no ~/.herdr/worktrees, skipping"
+    return 0
+  fi
+
+  local now cutoff found=0 removed=0 skipped_dirty=0 skipped_fresh=0 skipped_unmerged=0
+  now=$(date +%s)
+  cutoff=$(( now - DAYS * 86400 ))
+
+  info "scanning $root  (merged & older than ${DAYS}d)"
+  echo
+
+  local repo wt default_ref commit_ts age_days size branch main_wt reason
+  for repo in "$root"/*/; do
+    [[ -d "$repo" ]] || continue
+    for wt in "$repo"*/; do
+      [[ -d "$wt" ]] || continue
+      wt="${wt%/}"
+      git -C "$wt" rev-parse --git-dir >/dev/null 2>&1 || continue
+
+      default_ref=$(default_ref_for "$wt")
+      if [[ -z "$default_ref" ]]; then
+        warn "no default branch on origin for: $wt"
+        continue
+      fi
+
+      # Merged? (HEAD is ancestor of origin/main)
+      if ! git -C "$wt" merge-base --is-ancestor HEAD "$default_ref" 2>/dev/null; then
+        skipped_unmerged=$((skipped_unmerged+1))
+        continue
+      fi
+
+      # Fresh?
+      commit_ts=$(git -C "$wt" log -1 --format=%ct 2>/dev/null || echo 0)
+      if [[ "$commit_ts" -ge "$cutoff" ]]; then
+        skipped_fresh=$((skipped_fresh+1))
+        continue
+      fi
+
+      # Dirty?
+      if [[ -n "$(git -C "$wt" status --porcelain 2>/dev/null)" ]]; then
+        skipped_dirty=$((skipped_dirty+1))
+        warn "SKIP dirty: $wt"
+        continue
+      fi
+
+      found=$((found+1))
+      age_days=$(( (now - commit_ts) / 86400 ))
+      size=$(du -sh "$wt" 2>/dev/null | cut -f1)
+      branch=$(git -C "$wt" branch --show-current 2>/dev/null || echo "")
+      [[ -z "$branch" ]] && branch="(detached)"
+
+      printf '  %s  %6s  %3dd  %-40s  %s\n' \
+        "$(label)" "$size" "$age_days" "$branch" "$wt"
+
+      if [[ $YES -eq 1 ]]; then
+        main_wt=$(main_worktree_for "$wt")
+        if [[ -z "$main_wt" || "$main_wt" == "$wt" ]]; then
+          warn "  no main worktree found; rm -rf fallback"
+          rm -rf "$wt"
+        else
+          git -C "$main_wt" worktree remove --force "$wt" || {
+            warn "  git worktree remove failed; rm -rf fallback"
+            rm -rf "$wt"
+          }
+          # delete the local branch too if fully merged
+          if [[ "$branch" != "(detached)" ]]; then
+            git -C "$main_wt" branch -D "$branch" 2>/dev/null || true
+          fi
+        fi
+        removed=$((removed+1))
+      fi
+    done
+  done
+
+  echo
+  info "candidates: $found  |  skipped: unmerged=$skipped_unmerged fresh=$skipped_fresh dirty=$skipped_dirty"
+  if [[ $YES -eq 1 ]]; then
+    info "removed: $removed"
+  elif [[ $found -gt 0 ]]; then
+    warn "dry-run only. re-run with --yes to delete."
+  fi
+}
+
+case "$CMD" in
+  docker)    tidy_docker ;;
+  worktrees) tidy_worktrees ;;
+  all)       tidy_docker; echo; tidy_worktrees ;;
+esac
