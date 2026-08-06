@@ -1,5 +1,5 @@
 {
-  "cleanupPeriodDays": 365,
+  "cleanupPeriodDays": 9999,
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
     "CLAUDE_CODE_SUBAGENT_MODEL": "claude-sonnet-5[1m]",
@@ -27,11 +27,7 @@
       "Edit(**/secrets/**)",
       "mcp__playwright__browser"
     ],
-    "ask": [
-      "Read(**/*token*)",
-      "Bash(rm:*)",
-      "Bash(rm -rf:*)"
-    ],
+    "ask": ["Read(**/*token*)", "Bash(rm:*)", "Bash(rm -rf:*)"],
     "defaultMode": "auto"
   },
   "model": "sonnet[1m]",
