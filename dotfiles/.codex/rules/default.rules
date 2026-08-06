@@ -1,2 +1,0 @@
-prefix_rule(pattern=["/usr/bin/zsh", "-c", "NPM_CONFIG_ENGINE_STRICT=false pnpm --config.engine-strict=false --parallel --filter '@bak/*' build"], decision="allow")
-prefix_rule(pattern=["/usr/bin/zsh", "-lc", "NPM_CONFIG_ENGINE_STRICT=false pnpm --config.engine-strict=false --parallel --filter '@bak/*' build"], decision="allow")

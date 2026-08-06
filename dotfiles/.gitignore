@@ -35,6 +35,10 @@
 # codex plugin のランタイム状態（sqlite 等、実行時に生成される）
 /.codex/state/
 
+# codex が承認の度に自動追記する allow ルール。業務プロジェクトのパスや
+# プロンプト全文が溜まり続けるため public リポでは管理外
+/.codex/rules/default.rules
+
 # Claude Code デーモンのランタイム状態（実行時に生成される）
 /.claude/daemon/
 /.claude/daemon.*
