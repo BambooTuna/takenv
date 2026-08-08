@@ -11,7 +11,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: shellcheck
-        run: shellcheck bootstrap.sh
+        # info レベルは /etc/os-release の source 追跡失敗（SC1091）など環境差の指摘のみ
+        run: shellcheck -x --severity=warning bootstrap.sh bootstrap/*.sh
 
   # ゼロ状態の runner で bootstrap.sh → make doctor が通ることを検証する
   bootstrap:
