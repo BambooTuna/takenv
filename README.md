@@ -79,6 +79,7 @@ push / PR のたびに GitHub Actions がゼロ状態の macOS / Ubuntu runner �
 ```
 takenv/
 ├── bootstrap.sh             # 唯一のエントリポイント（OS判別・冪等）
+├── bootstrap/               # 上記から source される OS 別セットアップ
 ├── Makefile                 # link / unlink / doctor
 ├── Brewfile                 # Homebrew 宣言（Mac）
 ├── dotfiles/                # 設定ファイル群（~/ へ symlink）
