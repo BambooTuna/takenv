@@ -185,6 +185,16 @@ async function upload(files) {
 """
 
 
+class QuietThreadingHTTPServer(ThreadingHTTPServer):
+    """クライアント切断のトレースだけ握り潰す。動画配信で頻発するがサーバー側は正常。"""
+
+    def handle_error(self, request, client_address):
+        exc = sys.exc_info()[1]
+        if isinstance(exc, (BrokenPipeError, ConnectionResetError)):
+            return
+        super().handle_error(request, client_address)
+
+
 def tailscale_addr():
     """bind は Tailscale の IPv4、表示 URL は MagicDNS ホスト名を優先。"""
     try:
@@ -212,7 +222,7 @@ def bind_with_fallback(handler, ip, port, attempts=20):
     """指定ポートが使用中なら +1 しながら空きを探す。"""
     for p in range(port, port + attempts):
         try:
-            return ThreadingHTTPServer((ip, p), handler), p
+            return QuietThreadingHTTPServer((ip, p), handler), p
         except OSError as e:
             if e.errno != errno.EADDRINUSE:
                 raise
@@ -569,6 +579,13 @@ class ServeHandler(SimpleHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         return io.BytesIO(body)
+
+    def copyfile(self, source, outputfile):
+        # クライアントがシーク/中断で接続を切っただけ。ログに残す価値なし。
+        try:
+            super().copyfile(source, outputfile)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
 
 
 def run_serve(argv):
