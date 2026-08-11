@@ -3,26 +3,32 @@
 # リモートの開発サーバーを手元の localhost として見るための専用コマンド。
 #
 # 使い方:
-#   fwd <host> <port[,port...]> [user]
+#   fwd <user@host> <port[,port...]>
 #
 # 例:
-#   fwd desktop.taild59847.ts.net 3100,8100        # sekine の FE/BE を手元 localhost へ
-#   fwd desktop.taild59847.ts.net 3100,8100,5436   # DB も覗くとき
-#   fwd some-host 8080 otheruser                   # ユーザー指定
+#   fwd sekine@desktop.taild59847.ts.net 3100,8100        # FE/BE を手元 localhost へ
+#   fwd sekine@desktop.taild59847.ts.net 3100,8100,5436   # DB も覗くとき
+#   fwd pi@raspberrypi.taild59847.ts.net 8080             # Raspberry Pi
 #
 # ポートはローカル・リモートとも同じ番号で対応付ける。
-# デフォルトユーザーは $FWD_DEFAULT_USER (未設定なら suzuki_takeo)。
 
 set -eu
 
-if [ $# -lt 2 ]; then
-  echo "usage: fwd <host> <port[,port...]> [user]" >&2
+if [ $# -ne 2 ]; then
+  echo "usage: fwd <user@host> <port[,port...]>" >&2
   exit 1
 fi
 
-host=$1
+target=$1
 ports=$2
-user=${3:-${FWD_DEFAULT_USER:-suzuki_takeo}}
+
+case "$target" in
+  *@*) ;;
+  *)
+    echo "fwd: user@host 形式で指定してください (例: pi@raspberrypi.local)" >&2
+    exit 1
+    ;;
+esac
 
 fwd_args=""
 for p in $(printf '%s' "$ports" | tr ',' ' '); do
@@ -35,6 +41,6 @@ for p in $(printf '%s' "$ports" | tr ',' ' '); do
   fwd_args="$fwd_args -L ${p}:localhost:${p}"
 done
 
-echo "fwd: ${ports} -> ${user}@${host} (Ctrl+C で終了)"
+echo "fwd: ${ports} -> ${target} (Ctrl+C で終了)"
 # shellcheck disable=SC2086
-exec ssh -N $fwd_args "${user}@${host}"
+exec ssh -N $fwd_args "${target}"
