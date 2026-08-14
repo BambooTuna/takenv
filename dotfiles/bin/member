@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# member — herdr agent を「メンバー」として扱う薄いラッパー。
+# 1 メンバー = 1 tab (root pane に agent) の運用スタイルを前提にする。
+# spawn / list / close だけを提供し、指示・結果回収は素の herdr を使う:
+#   herdr agent prompt <名前> "<brief>" --wait --timeout 600000
+#   herdr agent read <名前> --source recent-unwrapped --lines 200
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+Usage:
+  member spawn <名前> <claude|codex> [-- <agent引数...>]   # tab 作成 + agent 起動
+  member list                                              # メンバー一覧 (name/kind/status/tab)
+  member close <名前>                                      # メンバーの pane を閉じる (tab ごと消える)
+
+名前ルール: 役割ベースの英小文字 (例: impl, review, test, impl-api)。[a-z][a-z0-9_-]{0,31}
+上位モデル例:
+  member spawn review claude -- --model 'claude-fable-5[1m]'
+  member spawn review codex -- -m gpt-5.6-sol
+EOF
+  exit 2
+}
+
+test "${HERDR_ENV:-}" = 1 || { echo "error: not inside a Herdr session" >&2; exit 1; }
+
+cmd="${1:-}"; shift || usage
+
+case "$cmd" in
+  spawn)
+    name="${1:?名前が必要}"; kind="${2:?kind (claude|codex) が必要}"; shift 2
+    [ "${1:-}" = "--" ] && shift
+    tab_json=$(herdr tab create --workspace "$HERDR_WORKSPACE_ID" --cwd "$PWD" --label "$name" --no-focus)
+    pane=$(jq -r '.result.root_pane.pane_id' <<< "$tab_json")
+    herdr agent start "$name" --kind "$kind" --pane "$pane" ${1:+-- "$@"} > /dev/null
+    echo "spawned: $name (kind=$kind pane=$pane)"
+    echo "next: herdr agent prompt $name \"<brief>\" --wait --timeout 600000"
+    ;;
+  list)
+    # 現在の workspace のみ（--all で全 workspace）
+    ws_filter="$HERDR_WORKSPACE_ID"
+    [ "${1:-}" = "--all" ] && ws_filter=""
+    herdr agent list | jq -r --arg ws "$ws_filter" '
+      .result.agents[]
+      | select($ws == "" or .workspace_id == $ws)
+      | [(.name // "-"), .agent, .agent_status, .tab_id, .terminal_title_stripped // ""]
+      | @tsv' | column -t -s $'\t'
+    ;;
+  close)
+    name="${1:?名前が必要}"
+    pane=$(herdr agent get "$name" | jq -r '.result.agent.pane_id // empty')
+    [ -n "$pane" ] || { echo "error: agent '$name' not found" >&2; exit 1; }
+    herdr agent send-keys "$name" ctrl+c > /dev/null 2>&1 || true
+    sleep 1
+    herdr pane close "$pane" > /dev/null
+    echo "closed: $name ($pane)"
+    ;;
+  *) usage ;;
+esac
