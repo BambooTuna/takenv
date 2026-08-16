@@ -33,6 +33,15 @@ trust_level = "trusted"
 [projects."/tmp"]
 trust_level = "trusted"
 
+[projects."/home/suzuki_takeo/github/reflllc/sekine-be"]
+trust_level = "trusted"
+
+[projects."/home/suzuki_takeo/github/BambooTuna/atelier"]
+trust_level = "trusted"
+
+[projects."/home/suzuki_takeo/github/BambooTuna/portfolio"]
+trust_level = "trusted"
+
 [tui.model_availability_nux]
 "gpt-5.6-sol" = 4
 
