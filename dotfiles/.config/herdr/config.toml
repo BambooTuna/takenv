@@ -5,9 +5,12 @@ agent_panel_sort = "spaces"
 prompt_new_tab_name = false
 
 # tmux 時代の Ctrl-a 系の操作感を引き継ぐ
-# (c: 新規タブ / z: ズーム / x: 閉じる / h,j,k,l: ペイン移動 はデフォルトのまま prefix 配下)
+# (c: 新規タブ / x: 閉じる / h,j,k,l: ペイン移動 はデフォルトのまま prefix 配下)
+show_agent_labels_on_pane_borders = true
 [keys]
 prefix = "ctrl+a"
+# フォーカス中のペインをズーム / 戻す。0.8.0 ではデフォルト未割当なので明示指定
+zoom = "prefix+z"
 # スペース間移動（サイドバーの並びに合わせて上下）。wezterm 側から Cmd+Shift+[ / ] で発火する
 previous_workspace = "prefix+up"
 next_workspace = "prefix+down"
@@ -28,6 +31,7 @@ allow_nested = true
 # ペインへ画像フレームを送る Kitty graphics 経路を有効化 (herdr-browser プラグイン用)
 kitty_graphics = true
 
+pane_history = true
 [theme]
 name = "terminal"
 auto_switch = false
