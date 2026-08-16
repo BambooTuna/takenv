@@ -98,6 +98,8 @@ return {
 		{ key = "j", mods = "SUPER", action = herdr({ key = "j" }) },
 		{ key = "k", mods = "SUPER", action = herdr({ key = "k" }) },
 		{ key = "l", mods = "SUPER", action = herdr({ key = "l" }) },
+		-- Cmd+Z: フォーカス中のペインをズーム / 戻す (herdr の prefix+z を発火)
+		{ key = "z", mods = "SUPER", action = herdr({ key = "z" }) },
 	},
 
 	use_fancy_tab_bar = false,
