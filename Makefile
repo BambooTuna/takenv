@@ -25,7 +25,8 @@ DOTFILES := \
 	$(HOME)/.local/bin/serve:dotfiles/bin/tailserve \
 	$(HOME)/.local/bin/dropserve:dotfiles/bin/tailserve \
 	$(HOME)/.local/bin/fwd:dotfiles/bin/fwd \
-	$(HOME)/.local/bin/killport:dotfiles/bin/killport
+	$(HOME)/.local/bin/killport:dotfiles/bin/killport \
+	$(HOME)/.local/bin/pcpow:dotfiles/bin/pcpow
 
 # 環境変数 TAKENV_LINK_BACKUP=1 で既存ファイルを .bak に退避してリンクを張る（bootstrap.sh が使用）
 link:
