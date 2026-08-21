@@ -1,0 +1,125 @@
+#!/bin/sh
+# tailscale ssh + Wake-on-LAN でリモートマシンの電源状態を操作する。
+# Pi (raspberrypi) 上で実行する前提。wake は同一 LAN へ Magic Packet を直接撃つ。
+# WSL (Windows) と Linux はリモート側の /proc/version で実行時に自動判別する。
+#
+# 使い方:
+#   pcpow <user@host> <status|sleep|hibernate|wake> [時間指定]
+#
+# 時間指定 (省略時は即実行。同期待機なので Ctrl+C で中断できる):
+#   30s / 10m / 2h   → その時間だけ待ってから実行
+#   23:30            → 今日のその時刻 (過ぎていれば明日) に実行
+#
+# 例:
+#   pcpow suzuki_takeo@desktop status         # 起きてるか確認
+#   pcpow suzuki_takeo@desktop sleep          # S3 スリープ (復帰 2-3秒)
+#   pcpow suzuki_takeo@desktop hibernate 30m  # 30分後に S4 休止 (消費 ~0.5W)
+#   pcpow suzuki_takeo@desktop wake 07:00     # 朝 7 時に WoL で起動
+#
+# ユーザーは tailnet policy で許可されたリモート側ユーザーを指定する
+# (例: desktop は suzuki_takeo のみ許可)。
+
+set -eu
+
+usage() {
+  echo "usage: pcpow <user@host> <status|sleep|hibernate|wake> [30s|10m|2h|HH:MM]" >&2
+  exit 1
+}
+
+[ $# -ge 2 ] && [ $# -le 3 ] || usage
+target=$1
+action=$2
+when=${3:-}
+
+case "$target" in
+  *@*) user=${target%%@*}; host=${target##*@} ;;
+  *)
+    echo "pcpow: user@host 形式で指定してください (例: suzuki_takeo@desktop)" >&2
+    exit 1
+    ;;
+esac
+
+# ---- ホスト表: wake に必要な物理 NIC 情報 (MAC / WoL broadcast) ----
+mac="" bcast=""
+case "$host" in
+  desktop)
+    mac="9C:6B:00:E6:AB:9D"
+    bcast="192.168.151.255"
+    ;;
+esac
+
+# 時間指定を秒数に変換して同期待機する (Ctrl+C で中断可)
+wait_until() {
+  [ -n "$when" ] || return 0
+  case "$when" in
+    *:*)
+      now=$(date +%s)
+      at=$(date -d "$when" +%s 2>/dev/null) || { echo "pcpow: 時刻 '$when' を解釈できません" >&2; exit 1; }
+      [ "$at" -gt "$now" ] || at=$(date -d "tomorrow $when" +%s)
+      secs=$((at - now))
+      ;;
+    *s) secs=${when%s} ;;
+    *m) secs=$(( ${when%m} * 60 )) ;;
+    *h) secs=$(( ${when%h} * 3600 )) ;;
+    *)
+      echo "pcpow: 時間指定 '$when' を解釈できません (30s / 10m / 2h / HH:MM)" >&2
+      exit 1
+      ;;
+  esac
+  echo "wait: $(date -d "@$(( $(date +%s) + secs ))" '+%H:%M:%S') に $action を実行します (Ctrl+C で中断)"
+  sleep "$secs"
+}
+
+# リモートが WSL なら Windows 用、素の Linux なら systemctl 用のコマンドを返す
+remote_suspend_cmd() {
+  # $1: sleep | hibernate
+  if [ "$1" = hibernate ]; then
+    win_cmd='/mnt/c/Windows/System32/shutdown.exe /h'
+    linux_cmd='sudo systemctl hibernate'
+  else
+    # SetSuspendState API は hibernate 有効環境でも S3 スリープを強制できる
+    win_cmd='/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Application]::SetSuspendState(\"Suspend\", \$false, \$false)"'
+    linux_cmd='sudo systemctl suspend'
+  fi
+  # nohup + fd 切り離しで、サスペンド突入時に SSH セッションが宙吊りになるのを防ぐ
+  printf '%s' "if grep -qi microsoft /proc/version 2>/dev/null; then nohup sh -c 'sleep 1 && $win_cmd' </dev/null >/dev/null 2>&1 & else nohup sh -c 'sleep 1 && $linux_cmd' </dev/null >/dev/null 2>&1 & fi"
+}
+
+case "$action" in
+  status)
+    if tailscale ping -c 1 --timeout 3s "$host" >/dev/null 2>&1; then
+      echo "awake: $host は起動中"
+    else
+      echo "asleep: $host は応答なし (sleep/hibernate/電源断)"
+    fi
+    ;;
+  sleep|hibernate)
+    wait_until
+    echo "→ $host を $action します"
+    tailscale ssh "$user@$host" "$(remote_suspend_cmd "$action")"
+    echo "done: 数秒後に落ちます。復帰は: pcpow $user@$host wake"
+    ;;
+  wake)
+    if [ -z "$mac" ]; then
+      echo "pcpow: $host の MAC が未定義です。pcpow スクリプト内のホスト表に追記してください" >&2
+      exit 1
+    fi
+    wait_until
+    wakeonlan -i "$bcast" "$mac"
+    echo "→ Magic Packet 送信済み。$host の起動を待ちます (hibernate 復帰は 20-40秒)"
+    i=0
+    while [ $i -lt 12 ]; do
+      sleep 5
+      if tailscale ping -c 1 --timeout 3s "$host" >/dev/null 2>&1; then
+        echo "awake: $host が起動しました"
+        exit 0
+      fi
+      i=$((i + 1))
+    done
+    echo "timeout: 60秒待ちましたが応答がありません。WoL 設定か L2 疎通を確認してください" >&2
+    exit 1
+    ;;
+  *)
+    usage
+    ;;
+esac
