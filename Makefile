@@ -152,7 +152,11 @@ up:
 help:
 	@echo "takenv — 開発環境構築リポジトリ"
 	@echo ""
-	@echo "  ./bootstrap.sh   ゼロ状態からの一括セットアップ（OS自動判別・冪等）"
+	@echo "  ./bootstrap.sh       最小構成 (VM/踏み台向け、Ubuntu/Debian のみ)"
+	@echo "                       zsh + mise + nvim/tmux/lazygit/herdr/gh + node"
+	@echo "  ./bootstrap-full.sh  フル構成 (Mac 母艦・開発機向け、Mac/Ubuntu/Debian)"
+	@echo "                       上記 + Docker + Tailscale + Claude Code + Playwright + 全ランタイム"
+	@echo "                       最小 → フルの後入れも冪等 (差分だけ足りる)"
 	@echo ""
 	@echo "セットアップ・診断:"
 	@echo "  make link    - dotfiles のシンボリックリンクを作成"

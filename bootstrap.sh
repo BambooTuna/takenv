@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
-# takenv bootstrap — ゼロ状態の Mac / Linux (Debian/Ubuntu) を同じ開発環境にする唯一のエントリポイント
+# takenv bootstrap (最小構成) — VM / 踏み台 / 迷ったらこっち
 #
 #   git clone https://github.com/BambooTuna/takenv.git && cd takenv && ./bootstrap.sh
 #
-# 冪等: 何度実行しても安全。導入済みのステップはスキップされる。
+# 入るもの: zsh + oh-my-zsh + dotfiles + mise + nvim/tmux/lazygit/ripgrep/herdr/gh + node(LazyVim用)
+# 入らないもの: Docker / Tailscale / SSM plugin / Playwright / Claude Code / Codex / 各種ランタイム
 #
-# 環境変数:
-#   TAKENV_SKIP_CASKS=1     GUIアプリ(cask)を入れない（CI・ヘッドレス用）
-#   TAKENV_IN_CONTAINER=1   コンテナ内として扱い Docker は CLI のみ導入
-#                           （docker build の RUN 中は /.dockerenv が無いため明示が必要）
+# フル構成 (Docker やクラウド CLI 込み) が欲しくなったら ./bootstrap-full.sh を叩く。
+# 最小の後にフルを重ねても冪等 (既に入ってるものはスキップ)。
+#
+# Mac は最小構成の実需が無いので ./bootstrap-full.sh を案内して終了する。
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -28,18 +29,20 @@ SKIP_CASKS="${TAKENV_SKIP_CASKS:-0}"
 . "$REPO_DIR/bootstrap/manual-steps.sh"
 
 main() {
-  log "takenv bootstrap ($OS)"
+  log "takenv bootstrap 最小構成 ($OS)"
   case "$OS" in
-    Darwin) setup_darwin ;;
-    Linux)  setup_linux ;;
+    Linux) setup_linux_minimal ;;
+    Darwin)
+      warn "Mac は最小構成に非対応です。フル構成で入れてください:"
+      warn "  ./bootstrap-full.sh"
+      exit 1
+      ;;
     *) echo "未対応の OS: $OS" >&2; exit 1 ;;
   esac
   setup_zsh
   setup_dotfiles
-  setup_mise_tools
-  setup_claude_code
-  setup_headless_browser
-  print_manual_steps
+  setup_mise_minimal_tools
+  print_manual_steps_minimal
 }
 
 main "$@"

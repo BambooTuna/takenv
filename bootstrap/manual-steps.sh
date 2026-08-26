@@ -29,3 +29,22 @@ EOS
   fi
   printf '\n  環境の健全性チェック: make doctor\n\n'
 }
+
+# 最小構成用の手動ステップ案内。VM/踏み台では Tailscale / Docker / GUI 等の案内は不要。
+# フルにしたくなったら ./bootstrap-full.sh を叩けば追加分だけ入る、と誘導する。
+print_manual_steps_minimal() {
+  log "完了 🎉 — 最小構成"
+  cat <<'EOS'
+  最小構成 (zsh / mise / nvim / herdr / lazygit / tmux / gh) のみ導入しました。
+
+  残りの手動ステップ:
+    1. シェルを開き直す: exec zsh -l
+    2. 必要なら SSH 鍵登録: git/README.md 参照
+
+  必要になったら追加できるもの:
+    - Docker / Playwright / Claude Code / awscli / gcloud など全部入り
+      → ./bootstrap-full.sh を叩けば最小構成に上乗せで入る（冪等）
+    - Tailscale だけ足したい場合は make tailscale-up
+EOS
+  printf '\n'
+}
