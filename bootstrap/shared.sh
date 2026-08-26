@@ -42,6 +42,7 @@ setup_mise_minimal_tools() {
   mise install fd
   mise install "github:ogulcancelik/herdr"
   mise install github-cli
+  mise install btop
   ok "最小ツールを導入しました"
 }
 
