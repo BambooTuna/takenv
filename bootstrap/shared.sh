@@ -30,6 +30,8 @@ setup_dotfiles() {
 # 最小構成: VM/踏み台で編集・閲覧に必須のツールだけ入れる。
 # node は LazyVim の Mason (typescript-language-server 等) が要求するので必須枠。
 # fzf は junegunn/fzf 経由で LazyVim が入れるので mise には含めない。
+# ripgrep / fd は Amazon Linux 標準リポに無い + Debian の fd-find は fdfind バイナリ名になり
+# LazyVim (fd を探す) と噛み合わないため、OS 非依存の mise 側で入れて統一する。
 setup_mise_minimal_tools() {
   log "mise install (最小: nvim/tmux/lazygit/herdr など)"
   mise install node
@@ -37,6 +39,7 @@ setup_mise_minimal_tools() {
   mise install tmux
   mise install lazygit
   mise install ripgrep
+  mise install fd
   mise install "github:ogulcancelik/herdr"
   mise install github-cli
   ok "最小ツールを導入しました"

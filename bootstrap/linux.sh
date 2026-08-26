@@ -4,19 +4,38 @@
 # 最小構成用と full 構成用で共通の部品を関数として提供する。
 # 呼び出し側 (bootstrap.sh / bootstrap-full.sh) で必要なものだけ組み合わせる。
 
-# 最小構成でも必ず入れる apt パッケージ。VM/踏み台での「編集・閲覧・grep・git」ができる最小限。
+# 最小構成でも必ず入れる apt パッケージ (Debian/Ubuntu)。VM/踏み台での「編集・閲覧・grep・git」ができる最小限。
+# ripgrep / fd は AL2023 対応と Debian の fd-find バイナリ名問題のため mise 側に寄せた (setup_mise_minimal_tools)。
 install_apt_minimal() {
   local SUDO="$1"
   log "apt パッケージ (最小)"
   $SUDO apt-get update -y
   # build-essential: mise の neovim / treesitter コンパイル用
-  # ripgrep / fd-find: telescope / grep 実用ライン
   DEBIAN_FRONTEND=noninteractive $SUDO apt-get install -y \
     git curl wget unzip zsh build-essential ca-certificates locales gnupg \
-    jq tree ripgrep fd-find
+    jq tree
 
   if ! locale -a 2>/dev/null | grep -qi 'ja_JP.utf8'; then
     $SUDO locale-gen ja_JP.UTF-8
+    ok "ja_JP.UTF-8 ロケールを生成"
+  fi
+}
+
+# 最小構成の yum/dnf 版 (Amazon Linux 2023 / RHEL / Rocky / AlmaLinux)。
+# AL2023 は dnf ネイティブだが yum が dnf の symlink として同梱されている。
+# ripgrep / fd は AL 標準リポジトリに無いので mise 経由 (setup_mise_minimal_tools) で入れる。
+install_yum_minimal() {
+  local SUDO="$1"
+  log "yum/dnf パッケージ (最小)"
+  # curl-minimal がデフォなので curl フル版に置き換えるなら --allowerasing が要る。今回はそのまま使う。
+  # "Development Tools" group が Debian の build-essential 相当。
+  $SUDO yum install -y \
+    git curl wget unzip zsh gcc gcc-c++ make ca-certificates \
+    jq tree
+
+  if ! locale -a 2>/dev/null | grep -qi 'ja_JP.utf8'; then
+    $SUDO yum install -y glibc-langpack-ja glibc-locale-source || true
+    $SUDO localedef -i ja_JP -f UTF-8 ja_JP.UTF-8 || true
     ok "ja_JP.UTF-8 ロケールを生成"
   fi
 }
@@ -64,14 +83,22 @@ chsh_to_zsh() {
   fi
 }
 
-# 最小構成: apt 最小 + mise 本体 + zsh 化のみ
+# 最小構成: apt/yum 最小 + mise 本体 + zsh 化のみ
+# Debian/Ubuntu (apt) と Amazon Linux 2023 等 (yum/dnf) を自動判定する。
 setup_linux_minimal() {
   local SUDO=""
   local user
   user="$(id -un)"
   [ "$(id -u)" -ne 0 ] && SUDO="sudo"
 
-  install_apt_minimal "$SUDO"
+  if command -v apt-get >/dev/null 2>&1; then
+    install_apt_minimal "$SUDO"
+  elif command -v yum >/dev/null 2>&1; then
+    install_yum_minimal "$SUDO"
+  else
+    echo "apt-get / yum どちらも見つかりません。未対応の Linux ディストリビューションです。" >&2
+    exit 1
+  fi
   install_mise_binary
   chsh_to_zsh "$SUDO" "$user"
 }
