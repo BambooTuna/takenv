@@ -8,9 +8,9 @@ cask_args appdir: "/Applications", adopt: true  # 手動インストール済み
 ### zsh-syntax-highlighting / autosuggestions は oh-my-zsh の custom plugin として bootstrap.sh が導入
 brew 'zsh'
 brew 'git'
-brew 'gh'
 
 ### ランタイム・CLIツールのバージョン管理（dotfiles/.config/mise/config.toml）
+### CLI ツールは基本 mise に寄せる。ここは C ライブラリ依存が重い / OS 統合が重要なものだけ残す。
 brew 'mise'
 
 ## ターミナル環境
@@ -19,27 +19,12 @@ cask "karabiner-elements"
 cask "font-hack-nerd-font"
 cask "font-daddy-time-mono-nerd-font"
 
-## CLIツール
+## CLIツール (C ライブラリ・OS 統合が重要なものだけ。他は mise で管理)
 brew 'jq'
-brew 'bat'
 brew 'tree'
-brew 'biome'
-brew 'pandoc'
-brew 'ffmpeg'
-brew 'imagemagick'
-brew 'parallel'
-brew 'nkf'
-brew 'mosh'
-brew 'terminal-notifier'
-brew 'gogcli'
+brew 'ffmpeg'   # 音声・動画処理 (macOS は VideoToolbox 対応版が入る)
 ### AWS SSM Session Manager (aws ssm start-session 実行に必要な公式プラグイン)
 cask 'session-manager-plugin'
-
-### ls 代替 (exa はメンテ終了で formula 削除済みのため eza を使用)
-brew 'eza'
-
-### mise移行候補
-brew 'kotlin'
 
 ### DBクライアント（サーバはDockerで立てる）
 ### psql (link: true で keg-only を強制リンク)

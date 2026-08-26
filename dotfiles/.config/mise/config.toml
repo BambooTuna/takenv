@@ -2,7 +2,7 @@
 # 追加・更新後は `mise install` で反映する
 [tools]
 # ランタイム
-node = "20"
+node = "24"
 python = "3.12.13"
 go = "1.23.11"
 rust = "1.87.0"
@@ -26,16 +26,11 @@ ripgrep = "14.1.1"
 awscli = "2.13.37"
 gcloud = "565.0.0"
 terraform = "1.14.9"
-"npm:firebase-tools" = "14.7.0"
 sops = "3.12.2"
 # ローカルサービスを一時的な https://*.trycloudflare.com で公開するトンネル
 "aqua:cloudflare/cloudflared" = "latest"
 # Google Workspace 操作 CLI (実行コマンド名は `gog`)
 "github:openclaw/gogcli" = "0.34.1"
-
-# 開発補助
-lefthook = "2.0.7"
-tokei = "12.1.2"
 
 # AIエージェント（Claude Code は bootstrap.sh で公式インストーラから導入）
 "npm:@openai/codex" = "latest"
