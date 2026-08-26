@@ -1,23 +1,34 @@
 # shellcheck shell=bash
 # takenv bootstrap — Linux (Debian/Ubuntu) 用セットアップ
+#
+# 最小構成用と full 構成用で共通の部品を関数として提供する。
+# 呼び出し側 (bootstrap.sh / bootstrap-full.sh) で必要なものだけ組み合わせる。
 
-setup_linux() {
-  local SUDO=""
-  local user
-  user="$(id -un)"
-  [ "$(id -u)" -ne 0 ] && SUDO="sudo"
-
-  log "apt パッケージ"
+# 最小構成でも必ず入れる apt パッケージ。VM/踏み台での「編集・閲覧・grep・git」ができる最小限。
+install_apt_minimal() {
+  local SUDO="$1"
+  log "apt パッケージ (最小)"
   $SUDO apt-get update -y
-  # python-is-python3: gcloud SDK の install.sh 等が `python` コマンドを直接呼ぶため必要
+  # build-essential: mise の neovim / treesitter コンパイル用
+  # ripgrep / fd-find: telescope / grep 実用ライン
   DEBIAN_FRONTEND=noninteractive $SUDO apt-get install -y \
     git curl wget unzip zsh build-essential ca-certificates locales gnupg \
-    jq bat tree postgresql-client default-mysql-client python-is-python3
+    jq tree ripgrep fd-find
 
   if ! locale -a 2>/dev/null | grep -qi 'ja_JP.utf8'; then
     $SUDO locale-gen ja_JP.UTF-8
     ok "ja_JP.UTF-8 ロケールを生成"
   fi
+}
+
+# full 構成でだけ入れる追加 apt パッケージ (DB クライアント + Chrome/Playwright 用ライブラリ)。
+install_apt_full_extras() {
+  local SUDO="$1"
+  log "apt パッケージ (full 追加分)"
+  # python-is-python3: gcloud SDK の install.sh 等が `python` コマンドを直接呼ぶため必要
+  # ffmpeg: 音声・動画処理 (mise で管理しにくい C ライブラリ塊)
+  DEBIAN_FRONTEND=noninteractive $SUDO apt-get install -y \
+    postgresql-client default-mysql-client python-is-python3 ffmpeg
 
   # Chrome for Testing (ヘッドレスブラウザ) 実行に必要な共有ライブラリ
   # Ubuntu 24.04+ は libasound2t64、22.04 系は libasound2 で提供される
@@ -28,7 +39,9 @@ setup_linux() {
     libxcomposite1 libxdamage1 libxrandr2 libxfixes3 libcups2 \
     libatk1.0-0 libatk-bridge2.0-0 libpangocairo-1.0-0 libgtk-3-0 libxshmfence1 \
     fonts-noto-cjk fonts-noto-color-emoji
+}
 
+install_mise_binary() {
   log "mise"
   if command -v mise >/dev/null 2>&1 || [ -x "$HOME/.local/bin/mise" ]; then
     ok "インストール済み"
@@ -36,11 +49,11 @@ setup_linux() {
     curl -fsSL https://mise.run | sh
   fi
   export PATH="$HOME/.local/bin:$PATH"
+}
 
-  install_docker "$SUDO" "$user"
-  install_tailscale
-  install_ssm_plugin "$SUDO"
-
+chsh_to_zsh() {
+  local SUDO="$1"
+  local user="$2"
   log "ログインシェルを zsh に変更"
   if [ "$(basename "${SHELL:-}")" = "zsh" ]; then
     ok "設定済み"
@@ -49,6 +62,34 @@ setup_linux() {
   else
     warn "chsh に失敗しました。手動で実行してください: chsh -s \$(command -v zsh)"
   fi
+}
+
+# 最小構成: apt 最小 + mise 本体 + zsh 化のみ
+setup_linux_minimal() {
+  local SUDO=""
+  local user
+  user="$(id -un)"
+  [ "$(id -u)" -ne 0 ] && SUDO="sudo"
+
+  install_apt_minimal "$SUDO"
+  install_mise_binary
+  chsh_to_zsh "$SUDO" "$user"
+}
+
+# full 構成: 最小 + DB/Playwright libs + Docker + Tailscale + SSM plugin
+setup_linux_full() {
+  local SUDO=""
+  local user
+  user="$(id -un)"
+  [ "$(id -u)" -ne 0 ] && SUDO="sudo"
+
+  install_apt_minimal "$SUDO"
+  install_apt_full_extras "$SUDO"
+  install_mise_binary
+  install_docker "$SUDO" "$user"
+  install_tailscale
+  install_ssm_plugin "$SUDO"
+  chsh_to_zsh "$SUDO" "$user"
 }
 
 install_docker() {

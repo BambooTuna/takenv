@@ -1,13 +1,29 @@
 # takenv — 個人開発環境構築リポジトリ
 
-ゼロ状態の Mac / Ubuntu VM を、コマンド一発で同じ開発環境にするリポジトリです。
+Mac / Ubuntu / Debian をゼロ状態から同じ開発環境にするリポジトリです。用途に応じてエントリを 2 本用意しています。
 
 ```bash
 git clone https://github.com/BambooTuna/takenv.git && cd takenv
+
+# VM / 踏み台 / 迷ったらこっち (Ubuntu/Debian のみ、軽量)
 ./bootstrap.sh
+
+# Mac 母艦・GPU 機・WSL 開発機など全部入り (Mac も対応)
+./bootstrap-full.sh
 ```
 
-冪等なので何度実行しても安全です（導入済みのステップはスキップされます）。
+どちらも冪等なので何度実行しても安全です。**最小構成を先に叩いてから後でフルに乗せ換える**、という順序も差分だけ足せば済みます。
+
+### 使い分け
+
+| | `./bootstrap.sh` (最小) | `./bootstrap-full.sh` (フル) |
+|---|---|---|
+| 対象 OS | Ubuntu / Debian のみ | Mac / Ubuntu / Debian |
+| 想定用途 | VM・踏み台・SSM で入る作業サーバー | 母艦・GPU 機・普段の開発機 |
+| 入るもの | zsh + oh-my-zsh + dotfiles + mise + `nvim / tmux / lazygit / ripgrep / herdr / gh / node` | 上記 + Docker + Tailscale + SSM plugin + Playwright chromium + Claude Code + Codex + Homebrew (Mac) + mise 全ツール (python/go/rust/awscli/gcloud/terraform/firebase/...) |
+| 所要時間の目安 | 数分 | 数十分 (mise の全ランタイム DL・chromium 込みのため) |
+
+VM 側で LazyVim を動かすのに必要な `node` は最小構成にも含まれます。`fzf` は LazyVim の `junegunn/fzf` プラグイン経由で供給されるので別途 apt/mise には入れていません。
 
 ## 何が再現されるか
 
@@ -15,16 +31,11 @@ git clone https://github.com/BambooTuna/takenv.git && cd takenv
 
 | 層 | 定義ファイル | 担当 |
 |---|---|---|
-| GUI アプリ・フォント・C ライブラリ | [`Brewfile`](./Brewfile) | Homebrew（Mac のみ） |
+| GUI アプリ・フォント・C ライブラリ | [`Brewfile`](./Brewfile) | Homebrew（Mac のみ、フル構成） |
 | ランタイム・CLI ツール | [`dotfiles/.config/mise/config.toml`](./dotfiles/.config/mise/config.toml) | [mise](https://mise.jdx.dev/)（バージョン固定） |
 | 設定ファイル | [`dotfiles/`](./dotfiles) | シンボリックリンク（`make link`） |
 
-`bootstrap.sh` はこの三層を OS を判別して順に適用します。
-
-- **Mac**: Homebrew 導入 → `brew bundle` → oh-my-zsh → dotfiles リンク → `mise install` → Claude Code
-- **Ubuntu**: apt（zsh / build ツール / DB クライアント）→ mise 導入 → oh-my-zsh → dotfiles リンク → `mise install` → Claude Code → Docker CE → Tailscale → ログインシェルを zsh 化
-
-Ubuntu では GUI 層（cask）を除いた CLI 環境（zsh + mise + herdr + nvim + Claude Code / Codex）が再現されます。
+`bootstrap-full.sh` はこの三層を OS を判別して順に適用します（Mac は Homebrew → brew bundle → oh-my-zsh → dotfiles リンク → mise 全ツール → Claude Code、Ubuntu/Debian は apt → mise → oh-my-zsh → dotfiles → mise 全ツール → Claude Code → Docker CE → Tailscale）。`bootstrap.sh` は最小のセットのみ適用します。
 
 ## セットアップ後の手動ステップ
 
@@ -54,15 +65,15 @@ make tailscale-up  # Tailscale に参加（Linux は --ssh 付きで SSH 受付�
 
 ```bash
 git pull
-./bootstrap.sh   # 新しく宣言されたツールの導入・差分適用
+./bootstrap-full.sh   # 新しく宣言されたツールの導入・差分適用 (VM は ./bootstrap.sh)
 ```
 
-- ツールを足す: `Brewfile`（GUI）か `dotfiles/.config/mise/config.toml`（CLI/ランタイム）に追記して `./bootstrap.sh`
+- ツールを足す: `Brewfile`（GUI）か `dotfiles/.config/mise/config.toml`（CLI/ランタイム）に追記して `./bootstrap-full.sh`
 - マシン固有・秘匿の設定: `~/.zshrc.local` に書く（git 管理外）
 
 ## CI
 
-push / PR のたびに GitHub Actions がゼロ状態の macOS / Ubuntu runner で `./bootstrap.sh` → `make doctor` を実行し、「ゼロから構築できること」を常時検証します（[.github/workflows/bootstrap.yml](./.github/workflows/bootstrap.yml)）。
+push / PR のたびに GitHub Actions がゼロ状態の macOS / Ubuntu runner で `./bootstrap-full.sh` → `make doctor` を実行し、「ゼロから構築できること」を常時検証します（[.github/workflows/bootstrap.yml](./.github/workflows/bootstrap.yml)）。最小構成側は shellcheck のみ。
 
 ## 含まれる設定
 
@@ -78,8 +89,9 @@ push / PR のたびに GitHub Actions がゼロ状態の macOS / Ubuntu runner �
 
 ```
 takenv/
-├── bootstrap.sh             # 唯一のエントリポイント（OS判別・冪等）
-├── bootstrap/               # 上記から source される OS 別セットアップ
+├── bootstrap.sh             # 最小構成エントリ (VM/踏み台向け、Ubuntu/Debian)
+├── bootstrap-full.sh        # フル構成エントリ (Mac 母艦・開発機、Mac/Ubuntu/Debian)
+├── bootstrap/               # 上記2本から source される共通セットアップ関数群
 ├── Makefile                 # link / unlink / doctor
 ├── Brewfile                 # Homebrew 宣言（Mac）
 ├── dotfiles/                # 設定ファイル群（~/ へ symlink）

@@ -27,8 +27,24 @@ setup_dotfiles() {
   TAKENV_LINK_BACKUP=1 make -C "$REPO_DIR" link
 }
 
-setup_mise_tools() {
-  log "mise install (ランタイム・CLIツール)"
+# 最小構成: VM/踏み台で編集・閲覧に必須のツールだけ入れる。
+# node は LazyVim の Mason (typescript-language-server 等) が要求するので必須枠。
+# fzf は junegunn/fzf 経由で LazyVim が入れるので mise には含めない。
+setup_mise_minimal_tools() {
+  log "mise install (最小: nvim/tmux/lazygit/herdr など)"
+  mise install node
+  mise install neovim
+  mise install tmux
+  mise install lazygit
+  mise install ripgrep
+  mise install "github:ogulcancelik/herdr"
+  mise install github-cli
+  ok "最小ツールを導入しました"
+}
+
+# full 構成: mise/config.toml で宣言された全ツールを入れる。
+setup_mise_all_tools() {
+  log "mise install (全ツール)"
   # npm バックエンド (codex) が node を要求するため node を先に入れる
   mise install node
   mise install

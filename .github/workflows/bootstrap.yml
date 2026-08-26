@@ -12,9 +12,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: shellcheck
         # info レベルは /etc/os-release の source 追跡失敗（SC1091）など環境差の指摘のみ
-        run: shellcheck -x --severity=warning bootstrap.sh bootstrap/*.sh
+        run: shellcheck -x --severity=warning bootstrap.sh bootstrap-full.sh bootstrap/*.sh
 
-  # ゼロ状態の runner で bootstrap.sh → make doctor が通ることを検証する
+  # ゼロ状態の runner でフル構成 (./bootstrap-full.sh) → make doctor が通ることを検証する。
+  # 最小構成 (./bootstrap.sh) は shellcheck ジョブでカバー。
   bootstrap:
     strategy:
       fail-fast: false
@@ -29,7 +30,7 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-      - name: bootstrap
-        run: ./bootstrap.sh
+      - name: bootstrap-full
+        run: ./bootstrap-full.sh
       - name: doctor
         run: make doctor
