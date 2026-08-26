@@ -67,23 +67,6 @@ gwa() {
     fi
 }
 
-# AWS SSM Session Manager で zsh を直接起動する (default document は sh を起動してしまい、
-# sh 名 invoked された bash は POSIX モードで .profile も .bashrc も条件次第でしか読まない = shell 側で hook 不可)。
-# 使い方: ssms i-xxxx [profile] [region]  profile/region 省略時は AWS_PROFILE / AWS_REGION or 既定値
-ssms() {
-    if [ -z "$1" ]; then
-        echo "Usage: ssms <instance-id> [profile] [region]"
-        return 1
-    fi
-    local target="$1"
-    local profile="${2:-${AWS_PROFILE:-default}}"
-    local region="${3:-${AWS_REGION:-ap-northeast-1}}"
-    aws ssm start-session --region "$region" --profile "$profile" \
-        --target "$target" \
-        --document-name AWS-StartInteractiveCommand \
-        --parameters 'command=["/usr/bin/zsh -l"]'
-}
-
 # path
 export GO111MODULE=on
 export GOPATH=$HOME/go
