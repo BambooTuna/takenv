@@ -27,10 +27,11 @@ install_apt_minimal() {
 install_yum_minimal() {
   local SUDO="$1"
   log "yum/dnf パッケージ (最小)"
-  # curl-minimal がデフォなので curl フル版に置き換えるなら --allowerasing が要る。今回はそのまま使う。
-  # "Development Tools" group が Debian の build-essential 相当。
+  # curl は install list に入れない: AL2023 は curl-minimal がデフォで入っており、
+  # curl フル版とは共存不可 (--allowerasing が要る)。curl-minimal で `curl -fsSL` は動くのでそのまま使う。
+  # "Development Tools" group が Debian の build-essential 相当なので gcc/gcc-c++/make を個別指定。
   $SUDO yum install -y \
-    git curl wget unzip zsh gcc gcc-c++ make ca-certificates \
+    git wget unzip zsh gcc gcc-c++ make ca-certificates \
     jq tree
 
   if ! locale -a 2>/dev/null | grep -qi 'ja_JP.utf8'; then
