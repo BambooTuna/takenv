@@ -18,7 +18,7 @@ git clone https://github.com/BambooTuna/takenv.git && cd takenv
 
 | | `./bootstrap.sh` (最小) | `./bootstrap-full.sh` (フル) |
 |---|---|---|
-| 対象 OS | Ubuntu / Debian のみ | Mac / Ubuntu / Debian |
+| 対象 OS | Ubuntu / Debian / Amazon Linux 2023 (apt/yum 自動判定) | Mac / Ubuntu / Debian |
 | 想定用途 | VM・踏み台・SSM で入る作業サーバー | 母艦・GPU 機・普段の開発機 |
 | 入るもの | zsh + oh-my-zsh + dotfiles + mise + `nvim / tmux / lazygit / ripgrep / herdr / gh / node` | 上記 + Docker + Tailscale + SSM plugin + Playwright chromium + Claude Code + Codex + Homebrew (Mac) + mise 全ツール (python/go/rust/awscli/gcloud/terraform/firebase/...) |
 | 所要時間の目安 | 数分 | 数十分 (mise の全ランタイム DL・chromium 込みのため) |
