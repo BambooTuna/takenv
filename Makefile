@@ -7,6 +7,7 @@
 # .agents は SKILL.md 群の正本置き場（Claude / Codex 双方から参照される）
 DOTFILES := \
 	$(HOME)/.zshrc:dotfiles/.zshrc \
+	$(HOME)/.profile:dotfiles/.profile \
 	$(HOME)/.rc:dotfiles/.rc \
 	$(HOME)/.gitconfig:dotfiles/.gitconfig \
 	$(HOME)/.tmux.conf:dotfiles/.tmux.conf \
