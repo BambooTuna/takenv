@@ -31,7 +31,12 @@ case "$cmd" in
     [ "${1:-}" = "--" ] && shift
     tab_json=$(herdr tab create --workspace "$HERDR_WORKSPACE_ID" --cwd "$PWD" --label "$name" --no-focus)
     pane=$(jq -r '.result.root_pane.pane_id' <<< "$tab_json")
-    herdr agent start "$name" --kind "$kind" --pane "$pane" ${1:+-- "$@"} > /dev/null
+    # tab create 直後はシェル初期化中で agent_pane_busy になるためリトライ
+    for i in $(seq 1 15); do
+      err=$(herdr agent start "$name" --kind "$kind" --pane "$pane" ${1:+-- "$@"} 2>&1 >/dev/null) && break
+      if grep -q agent_pane_busy <<< "$err" && [ "$i" -lt 15 ]; then sleep 1; continue; fi
+      echo "$err" >&2; herdr pane close "$pane" > /dev/null 2>&1 || true; exit 1
+    done
     echo "spawned: $name (kind=$kind pane=$pane)"
     echo "next: herdr agent prompt $name \"<brief>\" --wait --timeout 600000"
     ;;
