@@ -42,3 +42,4 @@ github-cli = "latest"
 # ヘッドレスブラウザ (スクショ・DOM解析・クリック等の Web 自動化)
 # chromium 本体は `mise x -- playwright install chromium` で ~/.cache/ms-playwright に導入
 "npm:playwright" = "latest"
+1password = "latest"

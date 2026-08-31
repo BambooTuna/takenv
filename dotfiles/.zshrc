@@ -73,3 +73,22 @@ export PATH="/opt/homebrew/opt/mysql-client/bin:$PATH"
 # Local-only secrets/overrides (not tracked by git)
 [[ -f "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"
 eval "$(mise activate zsh)"
+
+# On machines provisioned with a vault-scoped 1Password service account, keep
+# the regular `op` command within that scope. The token is local-only and is
+# exposed only to the `op` subprocess, not exported to the whole shell.
+if [[ -r "${OP_SERVICE_ACCOUNT_TOKEN_FILE:-$HOME/.config/op/service-account-token}" ]]; then
+  function op() {
+    local op_bin token token_file
+    op_bin="$(mise which op)" || return
+    token_file="${OP_SERVICE_ACCOUNT_TOKEN_FILE:-$HOME/.config/op/service-account-token}"
+    token="$(<"$token_file")"
+
+    env \
+      -u OP_SESSION \
+      -u OP_CONNECT_HOST \
+      -u OP_CONNECT_TOKEN \
+      OP_SERVICE_ACCOUNT_TOKEN="$token" \
+      "$op_bin" "$@"
+  }
+fi
