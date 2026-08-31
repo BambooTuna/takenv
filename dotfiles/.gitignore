@@ -62,7 +62,9 @@
 
 # cli-proxy-api の config は生 API キーを含むため管理外
 /.config/cli-proxy-api/
-
 # エージェントのランタイム状態（実行時に生成される）
 /.claude/.ponytail-active
 /.codex/thread-writer-locks/
+
+# Claude の memory dump (個人メモ、業務コード痕跡、URL 等が混じる恐れ → 絶対にコミットしない)
+/.claude/memory-archive-*/
