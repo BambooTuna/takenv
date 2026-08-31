@@ -4,17 +4,26 @@
 # WSL (Windows) と Linux はリモート側の /proc/version で実行時に自動判別する。
 #
 # 使い方:
-#   pcpow <user@host> <status|sleep|hibernate|wake> [時間指定]
+#   pcpow <user@host> <status|sleep|hibernate|wake> [時間指定 | watch]
 #
 # 時間指定 (省略時は即実行。同期待機なので Ctrl+C で中断できる):
 #   30s / 10m / 2h   → その時間だけ待ってから実行
 #   23:30            → 今日のその時刻 (過ぎていれば明日) に実行
+#   watch            → リモートの herdr agent list を叩き、working 数が 0 の状態が
+#                       PCPOW_WATCH_STREAK 回連続 (デフォルト 3) 続いたら実行。
+#                       判定間隔は PCPOW_WATCH_INTERVAL 秒 (デフォルト 60)。
+#                       一瞬全 blocked/idle になる瞬発ノイズは streak リセットで弾く。
+#
+# 動作確認 (実際にスリープさせずに watch の判定挙動だけ見たい):
+#   PCPOW_DRY_RUN=1 を立てると sleep/hibernate の実 suspend SSH をスキップし、
+#   トリガー時刻だけログに出して終了する。監視の毎回ログはそのまま流れる。
 #
 # 例:
-#   pcpow suzuki_takeo@desktop status         # 起きてるか確認
-#   pcpow suzuki_takeo@desktop sleep          # S3 スリープ (復帰 2-3秒)
-#   pcpow suzuki_takeo@desktop hibernate 30m  # 30分後に S4 休止 (消費 ~0.5W)
-#   pcpow suzuki_takeo@desktop wake 07:00     # 朝 7 時に WoL で起動
+#   pcpow suzuki_takeo@desktop status           # 起きてるか確認
+#   pcpow suzuki_takeo@desktop sleep            # S3 スリープ (復帰 2-3秒)
+#   pcpow suzuki_takeo@desktop hibernate 30m    # 30分後に S4 休止 (消費 ~0.5W)
+#   pcpow suzuki_takeo@desktop hibernate watch  # エージェントが働き終わったら休止
+#   pcpow suzuki_takeo@desktop wake 07:00       # 朝 7 時に WoL で起動
 #
 # ユーザーは tailnet policy で許可されたリモート側ユーザーを指定する
 # (例: desktop は suzuki_takeo のみ許可)。
@@ -22,7 +31,7 @@
 set -eu
 
 usage() {
-  echo "usage: pcpow <user@host> <status|sleep|hibernate|wake> [30s|10m|2h|HH:MM]" >&2
+  echo "usage: pcpow <user@host> <status|sleep|hibernate|wake> [30s|10m|2h|HH:MM|watch]" >&2
   exit 1
 }
 
@@ -39,6 +48,13 @@ case "$target" in
     ;;
 esac
 
+# 自ホスト判定: tailscale IP が自分と一致すれば watch はローカル叩き、tailscale ssh をバイパス。
+# (自ホストは sshd 未起動が多く tailscale ssh が通らない、かつローカル実行の方が速い)
+is_local=0
+self_ip=$(tailscale ip -4 2>/dev/null | head -1 || :)
+host_ip=$(tailscale ip -4 "$host" 2>/dev/null | head -1 || :)
+[ -n "$self_ip" ] && [ "$self_ip" = "$host_ip" ] && is_local=1
+
 # ---- ホスト表: wake に必要な物理 NIC 情報 (MAC / WoL broadcast) ----
 mac="" bcast=""
 case "$host" in
@@ -48,10 +64,53 @@ case "$host" in
     ;;
 esac
 
+# herdr の working エージェントが 0 の状態が need 回連続続くまで待つ。
+# 応答なし・JSON パース失敗は「動いてる可能性あり」扱いで streak をリセット (安全側)。
+# 対象が既に asleep (ping 応答なし) なら何もせず終了する。自ホストならローカル叩き。
+fetch_working_count() {
+  if [ "$is_local" = 1 ]; then
+    herdr agent list 2>/dev/null
+  else
+    tailscale ssh "$user@$host" 'herdr agent list 2>/dev/null' 2>/dev/null
+  fi | jq '[.result.agents[]? | select(.agent_status=="working")] | length' 2>/dev/null \
+    || echo NA
+}
+
+watch_until_idle() {
+  interval=$1
+  need=$2
+  streak=0
+  where=$([ "$is_local" = 1 ] && echo "自ホスト" || echo "$host")
+  echo "watch: $where の working エージェントが $interval 秒間隔で $need 回連続 0 になったら $action (Ctrl+C で中断)"
+  while :; do
+    if [ "$is_local" = 0 ] && ! tailscale ping -c 1 --timeout 3s "$host" >/dev/null 2>&1; then
+      echo "  $(date '+%H:%M:%S') $host は応答なし → 既に寝てるので何もせず終了"
+      exit 0
+    fi
+    busy=$(fetch_working_count)
+    if [ "$busy" = 0 ]; then
+      streak=$((streak + 1))
+      echo "  $(date '+%H:%M:%S') working=0 ($streak/$need)"
+      if [ "$streak" -ge "$need" ]; then
+        echo "  → trigger: $(date '+%Y-%m-%d %H:%M:%S') に $need 回連続 idle を検知"
+        return 0
+      fi
+    else
+      echo "  $(date '+%H:%M:%S') working=$busy (streak リセット)"
+      streak=0
+    fi
+    sleep "$interval"
+  done
+}
+
 # 時間指定を秒数に変換して同期待機する (Ctrl+C で中断可)
 wait_until() {
   [ -n "$when" ] || return 0
   case "$when" in
+    watch)
+      watch_until_idle "${PCPOW_WATCH_INTERVAL:-60}" "${PCPOW_WATCH_STREAK:-3}"
+      return
+      ;;
     *:*)
       now=$(date +%s)
       at=$(date -d "$when" +%s 2>/dev/null) || { echo "pcpow: 時刻 '$when' を解釈できません" >&2; exit 1; }
@@ -62,7 +121,7 @@ wait_until() {
     *m) secs=$(( ${when%m} * 60 )) ;;
     *h) secs=$(( ${when%h} * 3600 )) ;;
     *)
-      echo "pcpow: 時間指定 '$when' を解釈できません (30s / 10m / 2h / HH:MM)" >&2
+      echo "pcpow: 時間指定 '$when' を解釈できません (30s / 10m / 2h / HH:MM / watch)" >&2
       exit 1
       ;;
   esac
@@ -95,6 +154,15 @@ case "$action" in
     ;;
   sleep|hibernate)
     wait_until
+    if [ -n "${PCPOW_DRY_RUN:-}" ]; then
+      echo "[DRY-RUN] $(date '+%Y-%m-%d %H:%M:%S') $host に $action を打つべきタイミングを検知 (実行はスキップ)"
+      exit 0
+    fi
+    if [ "$is_local" = 1 ]; then
+      echo "pcpow: 自ホストへの $action は未対応 (PCPOW_DRY_RUN=1 で watch 動作確認のみ可能)。" >&2
+      echo "       本番はローカルで systemctl suspend / hibernate か Windows shutdown.exe /h を叩いてください" >&2
+      exit 1
+    fi
     echo "→ $host を $action します"
     tailscale ssh "$user@$host" "$(remote_suspend_cmd "$action")"
     echo "done: 数秒後に落ちます。復帰は: pcpow $user@$host wake"
@@ -102,6 +170,10 @@ case "$action" in
   wake)
     if [ -z "$mac" ]; then
       echo "pcpow: $host の MAC が未定義です。pcpow スクリプト内のホスト表に追記してください" >&2
+      exit 1
+    fi
+    if [ "$when" = watch ]; then
+      echo "pcpow: wake に watch は指定できません (寝てるマシンに herdr は無い)" >&2
       exit 1
     fi
     wait_until
