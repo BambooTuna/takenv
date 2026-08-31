@@ -15,3 +15,6 @@ tmp/
 /irodori-tts/
 /lt-slides/
 /services/
+
+# 実験・使い捨て置き場
+/scratch/
