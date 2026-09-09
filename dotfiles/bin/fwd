@@ -42,5 +42,17 @@ for p in $(printf '%s' "$ports" | tr ',' ' '); do
 done
 
 echo "fwd: ${ports} -> ${target} (Ctrl+C で終了)"
+
+trap 'echo; echo "fwd: 終了します"; exit 0' INT TERM
+
 # shellcheck disable=SC2086
-exec ssh -N $fwd_args "${target}"
+while :; do
+  ssh -N \
+    -o ServerAliveInterval=15 \
+    -o ServerAliveCountMax=3 \
+    -o ExitOnForwardFailure=yes \
+    -o ConnectTimeout=10 \
+    $fwd_args "${target}" || true
+  echo "fwd: 切断されました。5 秒後に再接続します..." >&2
+  sleep 5
+done
