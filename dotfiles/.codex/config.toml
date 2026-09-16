@@ -1,17 +1,15 @@
-model = "gpt-5.6-sol" # Or gpt-5.6-terra, gpt-5.6-luna, you can also use any of the models that we support.
+model = "gpt-6-astra" # Or gpt-5.6-terra, gpt-5.6-luna, you can also use any of the models that we support.
 model_provider = "cliproxyapi"
 
-# Disables all user confirmation prompts for actions. Dangerous—not recommended for Codex beginners. Remove the # to enable.
-# approval_policy = "never"
-
-# Grants unrestricted sandbox access. Dangerous—not recommended for Codex beginners. Remove the # to enable.
-# sandbox_mode = "danger-full-access" 
+# AGENTS.md のない既存 repo では CLAUDE.md を共通指示として読む。
+project_doc_fallback_filenames = ["CLAUDE.md"]
 
 model_reasoning_effort = "high"
 plan_mode_reasoning_effort = "xhigh"
 
 # mise 管理のため codex 自身の update prompt は無効化 (更新は mise upgrade で行う)
 check_for_update_on_startup = false
+approvals_reviewer = "user"
 
 [model_providers.cliproxyapi]
 base_url = "http://127.0.0.1:8317/v1"
@@ -54,6 +52,34 @@ trust_level = "trusted"
 [projects."/home/suzuki_takeo/github/BambooTuna/atelier/tmp/posters"]
 trust_level = "trusted"
 
+[projects."/home/suzuki_takeo/github/BambooTuna/misenoren"]
+trust_level = "trusted"
+
+[projects."/home/suzuki_takeo/pools-trade"]
+trust_level = "trusted"
+
+[projects."/home/suzuki_takeo/github/BambooTuna/shibamofu"]
+trust_level = "trusted"
+
+[projects."/tmp/shibamofu-refine/fluffy"]
+trust_level = "trusted"
+
+[projects."/tmp/shibamofu-variants/imagegen"]
+trust_level = "trusted"
+
+[projects."/home/suzuki_takeo/github/BambooTuna/farm-follow"]
+trust_level = "trusted"
+
+[tui]
+session_picker_view = "dense"
+
 [tui.model_availability_nux]
 "gpt-5.6-sol" = 4
 
+[features]
+hooks = true
+
+[hooks.state]
+
+[hooks.state."/home/suzuki_takeo/.codex/hooks.json:session_start:0:0"]
+trusted_hash = "sha256:6fa73192522bdea7684e25018ac55a76cd41c0a4d7c973244ff28054c10706f9"

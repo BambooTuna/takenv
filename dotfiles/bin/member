@@ -2,7 +2,7 @@
 # member — herdr agent を「メンバー」として扱う薄いラッパー。
 # 1 メンバー = 1 tab (root pane に agent) の運用スタイルを前提にする。
 # spawn / list / close だけを提供し、指示・結果回収は素の herdr を使う:
-#   herdr agent prompt <名前> "<brief>" --wait --timeout 600000
+#   herdr agent prompt <名前> "<brief>" --wait --timeout 60000
 #   herdr agent read <名前> --source recent-unwrapped --lines 200
 set -euo pipefail
 
@@ -38,7 +38,7 @@ case "$cmd" in
       echo "$err" >&2; herdr pane close "$pane" > /dev/null 2>&1 || true; exit 1
     done
     echo "spawned: $name (kind=$kind pane=$pane)"
-    echo "next: herdr agent prompt $name \"<brief>\" --wait --timeout 600000"
+    echo "next: herdr agent prompt $name \"<brief>\" --wait --timeout 60000"
     ;;
   list)
     # 現在の workspace のみ（--all で全 workspace）

@@ -1,13 +1,11 @@
 {
   "cleanupPeriodDays": 9999,
   "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
     "CLAUDE_CODE_SUBAGENT_MODEL": "claude-sonnet-5[1m]",
     "ANTHROPIC_BASE_URL": "http://127.0.0.1:8317",
     "ANTHROPIC_AUTH_TOKEN": "sk-VjlN7FDmwDHPKueOj"
   },
   "outputStyle": "Concise",
-  "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
       "Bash(pnpm format)",
@@ -18,17 +16,20 @@
       "mcp__plugin_slack_slack"
     ],
     "deny": [
-      "Bash(gog gmail send:*)",
-      "Bash(gog gmail drafts send:*)",
       "Bash(sudo:*)",
       "Read(.env.*)",
       "Read(id_rsa)",
       "Read(id_ed25519)",
       "Edit(.env*)",
-      "Edit(**/secrets/**)",
-      "mcp__playwright__browser"
+      "Edit(**/secrets/**)"
     ],
-    "ask": ["Read(**/*token*)", "Bash(rm:*)", "Bash(rm -rf:*)"],
+    "ask": [
+      "Read(**/*token*)",
+      "Bash(rm:*)",
+      "Bash(rm -rf:*)",
+      "Bash(gog gmail send:*)",
+      "Bash(gog gmail drafts send:*)"
+    ],
     "defaultMode": "auto"
   },
   "model": "claude-opus-4-7[1m]",
@@ -43,6 +44,18 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '/home/suzuki_takeo/.claude/hooks/herdr-agent-state.sh' session",
+            "timeout": 10
+          }
+        ]
+      }
     ]
   },
   "statusLine": {
@@ -51,7 +64,7 @@
   },
   "enabledPlugins": {
     "commit-commands@claude-plugins-official": true,
-    "frontend-design@claude-code-plugins": true,
+    "frontend-design@claude-code-plugins": false,
     "typescript-lsp@claude-plugins-official": true,
     "codex@openai-codex": true,
     "slack@claude-plugins-official": true,
@@ -88,7 +101,10 @@
   "skipDangerousModePermissionPrompt": true,
   "skipWorkflowUsageWarning": true,
   "theme": "dark",
-  "teammateMode": "in-process",
   "skipAutoPermissionPrompt": true,
-  "autoMemoryEnabled": false
+  "autoMemoryEnabled": false,
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  }
 }
