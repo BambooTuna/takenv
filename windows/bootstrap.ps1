@@ -128,4 +128,55 @@ try {
     Write-Err "ネットワークアダプタの列挙に失敗しました: $_"
 }
 
+# ---------------------------------------------------------------- Step 4: UDP ポート枯渇の監視タスク
+# ★調査用の一時計装 (2026-09): デスクトップの UDP ポート枯渇 / ルーター DNS 障害の
+# 犯人特定が目的。決着したら Step 4-5・files/netwatch-*.ps1・doctor.ps1 の検査を削除し、
+# Unregister-ScheduledTask で両タスクを解除する。
+# Tcpip イベント 4266 (UDP エフェメラルポート枯渇) の発生瞬間に、プロセス別ソケット数を
+# %USERPROFILE%\netwatch.log へ記録する。バースト消費の犯人プロセス特定が目的。
+Write-Step "UDP ポート枯渇監視タスク (Netwatch-PortExhaustion)"
+try {
+    $taskName = 'Netwatch-PortExhaustion'
+    $scriptSrc = Join-Path $PSScriptRoot 'files\netwatch-dump.ps1'
+    $scriptDst = Join-Path $env:USERPROFILE 'netwatch-dump.ps1'
+    Copy-Item -Path $scriptSrc -Destination $scriptDst -Force
+
+    $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$scriptDst`""
+
+    # New-ScheduledTaskTrigger はイベントトリガ未対応のため CIM で直接組む
+    $triggerClass = Get-CimClass MSFT_TaskEventTrigger root/Microsoft/Windows/TaskScheduler
+    $trigger = New-CimInstance -CimClass $triggerClass -ClientOnly
+    $trigger.Subscription = '<QueryList><Query Id="0" Path="System"><Select Path="System">*[System[Provider[@Name=''Tcpip''] and EventID=4266]]</Select></Query></QueryList>'
+    $trigger.Enabled = $true
+
+    $principal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType S4U -RunLevel Highest
+    $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 5)
+
+    Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force | Out-Null
+    Write-Ok "タスク '$taskName' を登録しました (ログ: %USERPROFILE%\netwatch.log)"
+} catch {
+    Write-Err "監視タスクの登録に失敗しました: $_"
+}
+
+# ---------------------------------------------------------------- Step 5: ネットワーク常駐サンプラー
+# 5秒間隔でルーターDNS/公開DNSの生死とソケット数を監視し、異常時のみ記録する常駐スクリプト。
+# ログオン時に自動起動。ログ: %USERPROFILE%\netwatch-sampler.log
+Write-Step "ネットワーク常駐サンプラー (Netwatch-Sampler)"
+try {
+    $taskName = 'Netwatch-Sampler'
+    $scriptSrc = Join-Path $PSScriptRoot 'files\netwatch-sampler.ps1'
+    $scriptDst = Join-Path $env:USERPROFILE 'netwatch-sampler.ps1'
+    Copy-Item -Path $scriptSrc -Destination $scriptDst -Force
+
+    $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$scriptDst`""
+    $trigger = New-ScheduledTaskTrigger -AtLogOn
+    $principal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType Interactive -RunLevel Limited
+    $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -MultipleInstances IgnoreNew -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
+
+    Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force | Out-Null
+    Write-Ok "タスク '$taskName' を登録しました (ログ: %USERPROFILE%\netwatch-sampler.log)"
+} catch {
+    Write-Err "サンプラータスクの登録に失敗しました: $_"
+}
+
 Write-Host "`n完了。状態確認は windows\doctor.ps1 を実行してください。`n" -ForegroundColor Cyan

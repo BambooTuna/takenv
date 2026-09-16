@@ -107,6 +107,26 @@ try {
     $status = 1
 }
 
+# ---------------------------------------------------------------- 5. UDP ポート枯渇監視タスク
+Write-Section "UDP ポート枯渇監視タスク"
+try {
+    $task = Get-ScheduledTask -TaskName 'Netwatch-PortExhaustion' -ErrorAction Stop
+    if ($task.State -eq 'Ready') {
+        Write-Pass "タスク 'Netwatch-PortExhaustion' は Ready です"
+    } else {
+        Write-Fail "タスクの State が Ready ではありません（現在: $($task.State)）"
+        $status = 1
+    }
+    $log = Join-Path $env:USERPROFILE 'netwatch.log'
+    if (Test-Path $log) {
+        $last = (Get-Content $log | Select-String '^===== ' | Select-Object -Last 1).Line
+        Write-Host "  記録あり: $last" -ForegroundColor Yellow
+    }
+} catch {
+    Write-Fail "タスク 'Netwatch-PortExhaustion' が見つかりません"
+    $status = 1
+}
+
 Write-Host ""
 if ($status -eq 0) {
     Write-Host "すべて OK です。" -ForegroundColor Green
