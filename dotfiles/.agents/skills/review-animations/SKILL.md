@@ -1,6 +1,6 @@
 ---
 name: review-animations
-description: Reviews animation and motion code against a high craft bar derived from Emil Kowalski's design engineering philosophy. Default to flagging; approval is earned.
+description: Review animation and motion code for usability, performance, accessibility, and visual coherence. Report concrete issues with evidence.
 disable-model-invocation: true
 ---
 
@@ -22,9 +22,9 @@ Every animation in the diff is measured against these. A violation is a finding.
 
 1. **Justified motion.** Every animation must answer "why does this animate?" — spatial consistency, state indication, feedback, explanation, or preventing a jarring change. "It looks cool" on a frequently-seen element is a block.
 
-2. **Frequency-appropriate.** Match motion to how often it's seen. Keyboard-initiated and 100+/day actions get **no** animation. Tens/day gets reduced motion. Occasional gets standard. Rare/first-time can have delight.
+2. **Frequency-appropriate.** Frequent actions need immediate feedback. Judge actual use and delay; keyboard input alone is not a defect.
 
-3. **Responsive easing.** Entering/exiting elements use `ease-out` or a strong custom curve. `ease-in` on UI is a block — it delays the moment the user watches most. Built-in CSS easings are too weak; expect custom cubic-beziers.
+3. **Responsive easing.** Entrances and direct feedback usually benefit from ease-out. Flag delayed feedback, not an easing name in isolation; preserve suitable existing tokens.
 
 4. **Sub-300ms UI.** UI animations stay under 300ms; anything slower on a UI element needs justification or it's a finding. Per-element budgets live in [STANDARDS.md](STANDARDS.md).
 
@@ -32,17 +32,17 @@ Every animation in the diff is measured against these. A violation is a finding.
 
 6. **Interruptibility.** Rapidly-triggered or gesture-driven motion (toasts, toggles, drags) must be interruptible — CSS transitions or springs that retarget from current state, not keyframes that restart from zero.
 
-7. **GPU-only properties.** Animate `transform` and `opacity` only. Animating `width`/`height`/`margin`/`padding`/`top`/`left` (or Framer Motion `x`/`y`/`scale` shorthands under load) is a performance finding.
+7. **Rendering cost.** Prefer transform/opacity. Height, clip-path, or library shorthands need evaluation in context; report observed cost or a concrete expensive path, not the property name alone.
 
-8. **Accessibility.** `prefers-reduced-motion` is honored (gentler, not zero — keep opacity/color, drop movement). Hover animations are gated behind `@media (hover: hover) and (pointer: fine)`.
+8. **Accessibility.** Honor `prefers-reduced-motion`: remove unnecessary movement, using instant updates or gentle opacity/color feedback as appropriate. Gate hover motion for devices that support hover.
 
 9. **Asymmetric enter/exit.** Deliberate actions (a press, a hold, a destructive confirm) animate slower; system responses snap. Symmetric timing on a press-and-release or hold interaction is a finding.
 
 10. **Cohesion.** Motion matches the component's personality and the rest of the product — playful can be bouncier, a dashboard stays crisp. Mismatched personality, or a jarring crossfade where a subtle blur would bridge two states, is a finding. When unsure whether motion feels right, the strongest move is often to delete it.
 
-## Aggressive Escalation Triggers
+## Inspection prompts
 
-Flag these on sight, hard:
+Inspect these patterns for concrete problems; their presence alone is not a finding:
 
 - `transition: all` (unbounded property animation)
 - `scale(0)` or pure-fade entrances with no initial transform
@@ -63,12 +63,12 @@ Flag these on sight, hard:
 
 When proposing fixes, prefer earlier moves over later ones:
 
-1. **Delete the animation** (high-frequency / no purpose / keyboard-triggered).
+1. **Delete unnecessary motion** when it adds delay or distraction without useful feedback.
 2. **Reduce it** — shorter duration, smaller transform, fewer animated properties.
 3. **Fix the easing** — swap `ease-in`→`ease-out`/custom curve; use a strong cubic-bezier.
 4. **Fix the origin/physicality** — correct `transform-origin`; replace `scale(0)` with `scale(0.95)`+opacity.
 5. **Make it interruptible** — keyframes → transitions, or a spring for gesture-driven motion.
-6. **Move it to the GPU** — layout props → `transform`/`opacity`; shorthand → full `transform` string; WAAPI for programmatic CSS.
+6. **Reduce rendering cost** — prefer transform/opacity where equivalent, and verify the execution path under representative load.
 7. **Asymmetric timing** — slow the deliberate phase, snap the response.
 8. **Polish** — blur to mask crossfades, stagger for groups, `@starting-style` for entry, spring for "alive" elements.
 9. **Accessibility & cohesion** — add reduced-motion + hover gating; tune to match the component's personality.
@@ -79,7 +79,7 @@ Two parts, in this order.
 
 ### Part 1 — Findings table (REQUIRED)
 
-A single markdown table. One row per issue. Never a "Before:/After:" list.
+Use a concise table or list with location, proposed change, and reason. Follow the requested review format.
 
 | Before | After | Why |
 | --- | --- | --- |
@@ -92,7 +92,7 @@ A single markdown table. One row per issue. Never a "Before:/After:" list.
 
 Group remaining commentary by impact tier, highest first. Omit empty tiers.
 
-1. **Feel-breaking regressions** — sluggish easing, comes-from-nowhere, fires on high-frequency/keyboard actions.
+1. **Feel-breaking regressions** — delayed feedback, discontinuity, or distracting motion during frequent actions.
 2. **Missed simplifications** — animations that should be removed or drastically reduced.
 3. **Performance** — non-GPU properties, dropped-frame risks, recalc storms.
 4. **Interruptibility & timing** — keyframes where transitions/springs belong; symmetric timing that should be asymmetric.
@@ -101,10 +101,10 @@ Group remaining commentary by impact tier, highest first. Omit empty tiers.
 
 Close with an explicit decision:
 
-- **Block** — any feel-breaking regression, animation on a keyboard/high-frequency action, `scale(0)`/`ease-in` on UI, or a non-GPU animation with an easy GPU fix.
+- **Block** — a concrete regression in responsiveness, accessibility, continuity, or rendering performance.
 - **Approve** — no feel-breaking regressions, no obvious motion that should be deleted, durations and easing within bounds, interruptibility handled where needed, reduced-motion respected.
 
-Be specific and cite `file:line`. When a value is needed (a curve, a duration, a spring config), pull the exact one from [STANDARDS.md](STANDARDS.md) rather than approximating.
+Be specific and cite `file:line`. Use existing motion tokens where suitable; [STANDARDS.md](STANDARDS.md) provides starting values for changes.
 
 ## Guidelines
 

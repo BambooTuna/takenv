@@ -1,6 +1,6 @@
 ---
 name: react-doctor
-description: Use when finishing a feature, fixing a bug, before committing React code, or when the user types `/doctor`, asks to scan, triage, or clean up React diagnostics. Covers lint, accessibility, bundle size, architecture. Includes a regression check and a full local-triage workflow that fetches the canonical playbook.
+description: React の診断・既知の品質問題を調査し修正する。/doctor、React 診断、react-doctor を依頼されたときや、原因不明の React 問題があるときに使う。通常の小さな変更ごとに全体スキャンしない。
 version: "1.2.0"
 ---
 
@@ -8,11 +8,11 @@ version: "1.2.0"
 
 Scans React codebases for security, performance, correctness, and architecture issues. Outputs a 0–100 health score.
 
-## After making React code changes:
+## Targeted regression investigation:
 
-Run `npx react-doctor@latest --verbose --scope changed` and check the score did not regress.
+When React diagnostics are relevant to the task, run `npx react-doctor@latest --verbose --scope changed`. Inspect concrete findings; the aggregate score is a signal, not a completion gate.
 
-If the score dropped, fix the regressions before committing.
+Fix confirmed regressions in the requested scope. Do not expand a small change into a full cleanup just to increase the score.
 
 ## For general cleanup or code improvement:
 

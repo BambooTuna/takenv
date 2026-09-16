@@ -21,7 +21,7 @@ Never present motion options as a menu. Make the call, state the reasoning in on
 ## Hard Rules
 
 1. **Run the sequence in order.** Steps 1 and 2 gate everything. Don't reach for a curve before you know whether it animates at all.
-2. **No approximated values.** Every curve, duration, and spring config comes from the tables below. Never invent `cubic-bezier(0.4, 0, 0.2, 1)` because it looks familiar.
+2. **Start with existing motion tokens.** The tables below are defaults for new motion; tune values to the interaction and verify the result.
 3. **Extend the codebase's tokens, don't fork them.** If `--ease-out` or a duration scale already exists, use it. Adding a parallel system is a defect.
 4. **Reduced motion and hover gating ship with the animation**, not as a follow-up.
 5. **Cheapest tool that works.** Don't install a motion library for a fade.
@@ -32,12 +32,12 @@ Never present motion options as a menu. Make the call, state the reasoning in on
 
 | Frequency | Decision |
 | --- | --- |
-| 100+ times/day (keyboard shortcuts, command palette toggle) | **No animation. Ever.** Stop here. |
+| 100+ times/day (keyboard shortcuts, command palette toggle) | Prefer instant feedback; keep only motion that aids use without delaying it. |
 | Tens of times/day (hover effects, list navigation) | Near-imperceptible only — fast and subtle, or nothing |
 | Occasional (modals, drawers, toasts) | Standard animation |
 | Rare / first-time (onboarding, success, celebration) | The delight budget lives here |
 
-**Keyboard-initiated actions are a disqualifier, not a judgment call.** Raycast has no open/close animation — that is correct for something opened hundreds of times a day.
+**Frequent keyboard actions need immediate feedback.** Input method alone does not rule out helpful motion; consider actual frequency and whether animation delays the action.
 
 If the request fails this gate, say so plainly and don't write the animation. Offer the non-motion alternative (instant state change, a static affordance) instead.
 
@@ -74,7 +74,7 @@ If the task needs a *component* rather than an animation — a toast, a drawer, 
 
 ### 4. Pick the properties
 
-- **`transform` and `opacity` only.** They skip layout and paint and run on the GPU. `width`/`height`/`margin`/`padding`/`top`/`left` trigger all three. (`clip-path` is the sanctioned fourth — see RECIPES.md. `height` is tolerated only for accordions, where there's no transform equivalent.)
+- **Prefer `transform` and `opacity`.** They can avoid layout and paint. Use `height` for accordions or `clip-path` where appropriate, keeping the affected area small and checking performance.
 - **Never `scale(0)`.** Start from `scale(0.9–0.97)` + `opacity: 0`. Nothing in the real world appears from nothing.
 - **`transform-origin` at the trigger** for popovers, dropdowns, menus, tooltips — `var(--transform-origin)` in Base UI. **Modals are exempt**; they're not anchored to a trigger, so they stay centered.
 - **Percentages in `translate()`** are relative to the element's own size — `translateY(100%)` moves by its own height whatever the content. Prefer over hardcoded pixels.
@@ -99,7 +99,7 @@ If the task needs a *component* rather than an animation — a toast, a drawer, 
 | Constant motion (marquee, progress) | `linear` |
 | Default | `ease-out` |
 
-**Never `ease-in` on UI.** It starts slow, delaying the exact moment the user is watching. `ease-out` at 200ms *feels* faster than `ease-in` at 200ms.
+**Prefer responsive easing for direct feedback.** Slow starts can feel delayed; choose ease-in only when the intended motion calls for acceleration.
 
 Built-in CSS easings are too weak. Use these:
 
@@ -158,31 +158,31 @@ const reduce = useReducedMotion();
 const closedX = reduce ? 0 : '-100%';
 ```
 
-Reduced motion means **fewer and gentler** animations, not zero — keep transitions that aid comprehension, remove movement and position changes.
+Honor reduced-motion preferences with instant updates or gentle feedback as appropriate; retaining animation is not required.
 
 ## Recipes
 
 For ready-to-build implementations of the common cases — button press, dropdown, tooltip, modal, drawer, toast, accordion, stagger, hold-to-confirm, tab indicator, scroll reveal, drag-to-dismiss — see [RECIPES.md](RECIPES.md). Load it whenever the request matches one of those components; start from the recipe rather than from a blank file.
 
-## Never Ship
+## Final check
 
-Self-check before you finish. Each of these is an automatic block in `review-animations`:
+Check these risks in context before finishing. Report concrete effects rather than treating every pattern as an automatic failure.
 
 | Never | Instead |
 | --- | --- |
 | `transition: all` | Name the exact properties |
 | `transform: scale(0)` entrance | `scale(0.95)` + `opacity: 0` |
-| `ease-in` on a UI element | `ease-out` or a strong custom curve |
-| Built-in `ease-out` on a deliberate animation | `cubic-bezier(0.23, 1, 0.32, 1)` |
-| Animation on a keyboard shortcut or 100+/day action | No animation |
+| Slow initial feedback | Prefer ease-out or shorten the response |
+| Easing conflicts with product motion | Use suitable existing tokens or tune a curve |
+| Motion delays a frequent action | Instant or unobtrusive feedback |
 | UI duration over 300ms with no reason | 150–250ms |
 | `transform-origin: center` on a trigger-anchored popover | `var(--transform-origin)` (modals exempt) |
 | Keyframes on toasts, toggles, rapidly-triggered elements | CSS transitions |
-| Animating `width`/`height`/`margin`/`padding`/`top`/`left` | `transform` / `opacity` |
-| Motion `x`/`y`/`scale` props under load | Full `transform` string |
+| Expensive layout animation | Reduce the affected area or use transform/opacity; verify performance |
+| Motion drops frames under load | Profile the execution path and choose a suitable implementation |
 | Ungated `:hover` motion | `@media (hover: hover) and (pointer: fine)` |
-| Missing `prefers-reduced-motion` | Gentler variant, not zero |
-| Everything entering at once | 30–80ms stagger |
+| Missing `prefers-reduced-motion` | Instant updates or a gentler variant |
+| Group entrance is hard to follow | Consider a short stagger if it improves comprehension |
 
 ## Output
 

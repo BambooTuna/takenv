@@ -82,7 +82,7 @@ push / PR のたびに GitHub Actions がゼロ状態の macOS / Ubuntu runner �
 - **WezTerm + herdr**: ターミナルマルチプレクサは herdr がメイン。Cmd キー操作を herdr の prefix に変換するキーバインド
 - **tmux**: mise でグローバル導入。`.tmux.conf` と `tls` / `ta` / `tns` / `ts` エイリアスを同梱
 - **Karabiner-Elements**: Caps Lock → Ctrl、右 Cmd → 英数、右 Option → かな
-- **AI ツール**: Claude Code（日本語設定・commands / skills / rules 同梱）、Codex（prompts 同梱）
+- **AI ツール**: Claude Code / Codex の共通指示・スキル（[設定と責任者の使い方](docs/agent-config.md)）
 - **SSH 越しのクリップボード**: OSC 52 対応の `bin/osc52-yank`
 
 ## ディレクトリ構成
@@ -101,7 +101,8 @@ takenv/
 │   ├── .config/wezterm/     # WezTerm 設定
 │   ├── .config/karabiner/   # キーリマップ設定
 │   ├── .config/herdr/       # herdr 設定
-│   ├── .claude/ / .codex/   # AI エージェント設定
+│   ├── .agents/            # AI 共通指示・スキルの正本
+│   ├── .claude/ / .codex/   # 各ツール設定・共通設定への参照
 │   └── bin/                 # ヘルパースクリプト
 ├── devcontainer/            # bootstrap.sh を使う開発コンテナ
 ├── git/                     # コミットテンプレート・SSH 手順

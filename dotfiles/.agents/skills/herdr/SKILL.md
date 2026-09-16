@@ -1,6 +1,6 @@
 ---
 name: herdr
-description: "Control Herdr, a terminal multiplexer for coding agents. Use only when the user explicitly mentions Herdr or asks to use Herdr to inspect or control panes, tabs, workspaces, commands, or another agent. Do not use merely because a task could benefit from a background terminal, delegation, or parallel work. Requires HERDR_ENV=1."
+description: "Control Herdr, a terminal multiplexer for coding agents. Use when the user asks to use Herdr, or to appoint a 責任者 for ongoing agent collaboration. Requires HERDR_ENV=1."
 ---
 
 # Herdr
@@ -13,7 +13,7 @@ Before issuing any control command, verify that this agent is running inside a H
 test "${HERDR_ENV:-}" = 1
 ```
 
-If the check fails, say that you are not running inside Herdr and stop. Do not inspect or control the focused Herdr session from outside Herdr.
+If the check fails, do not issue Herdr control commands. Use an available subagent or handle the task directly, and explain the change of execution method.
 
 When the check passes, the `herdr` binary in `PATH` talks to the current session. Use it to inspect neighboring work, create terminal layout, start agents and commands, read output, and wait for state changes.
 
@@ -89,7 +89,7 @@ Creation responses expose the IDs to use next. `workspace create` returns `.resu
 
 ## Start and coordinate an agent
 
-Default to a sibling pane in the current tab and the current working directory. Do not create a workspace, tab, worktree, or different cwd unless the user explicitly requests that topology or location.
+For a 責任者, use one tab per role in the current workspace and cwd. The local helper `member spawn <name> <claude|codex> [-- <agent-args...>]` creates the tab and starts the agent; `member list` and `member close <name>` inspect and finish it. Use the configured model unless the user specifies one. For ordinary pane work, use a sibling pane as below. Create a worktree or change cwd only when the task requires it.
 
 Honor a direction requested by the user. Otherwise inspect the caller pane:
 
@@ -122,17 +122,17 @@ herdr agent start reviewer --kind codex --pane <returned-pane-id> -- <agent-args
 Submit work through the agent surface:
 
 ```bash
-herdr agent prompt reviewer "Review the current diff and report only actionable findings." --wait --timeout 120000
+herdr agent prompt reviewer "Review the current diff and report only actionable findings." --wait --timeout 60000
 ```
 
-`agent prompt` atomically submits text and encoded Enter while honoring the pane's live bracketed-paste mode. For normal agent work, `--wait` is enough: it waits for the first settled `idle`, `done`, or `blocked` state. Do not repeat those defaults with `--until`.
+`agent prompt` atomically submits text and encoded Enter while honoring the pane's live bracketed-paste mode. When the result is needed immediately, use `--wait`. Otherwise submit without it, do independent work, then call `agent wait` and read the result. `--wait` waits for the first settled `idle`, `done`, or `blocked` state. Do not repeat those defaults with `--until`.
 
 A prompt sent from a non-working state must produce an observed lifecycle change within five seconds. Otherwise Herdr returns `agent_prompt_stalled` instead of waiting indefinitely. This wait tracks lifecycle state, not an individual turn; if the agent is already working, completion of the active turn may satisfy it.
 
 Use `--until` only for a state-specific workflow, such as waiting for an already-running agent to request input:
 
 ```bash
-herdr agent wait reviewer --until blocked --timeout 120000
+herdr agent wait reviewer --until blocked --timeout 60000
 ```
 
 Without `--until`, standalone `agent wait` uses the same settled-state defaults as `agent prompt --wait`.
@@ -151,7 +151,7 @@ herdr agent get reviewer
 herdr agent read reviewer --source recent-unwrapped --lines 120
 ```
 
-If a wait fails or returns `blocked`, inspect `agent get` and `agent read` before deciding what input to send. Use the pane surface only when raw terminal control is intentional.
+If a wait fails or returns `blocked`, inspect `agent get` and `agent read` before deciding what input to send. Read the requested action before responding to an approval UI. Answer within the user’s existing authorization; forward new permissions or scope decisions to the caller. Use the pane surface only when raw terminal control is intentional.
 
 ## Run an ordinary command in another pane
 
@@ -165,7 +165,7 @@ Read the new pane ID from `.result.pane.pane_id`, then run and inspect the comma
 
 ```bash
 herdr pane run <returned-pane-id> "just test"
-herdr pane wait-output <returned-pane-id> --match "test result" --timeout 120000
+herdr pane wait-output <returned-pane-id> --match "test result" --timeout 60000
 herdr pane read <returned-pane-id> --source recent-unwrapped --lines 120
 ```
 

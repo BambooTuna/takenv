@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: link unlink doctor tailscale-up gpu-setup btop-gpu up help sync-codex-skills
+.PHONY: link unlink doctor tailscale-up gpu-setup btop-gpu up help check-agent-config
 
 # リンク定義: <リンク先>:<リポジトリ内の相対パス>
 # herdr/mise はディレクトリにログ・認証情報等も置かれるため設定ファイルのみリンクする
@@ -20,13 +20,15 @@ DOTFILES := \
 	$(HOME)/.agents:dotfiles/.agents \
 	$(HOME)/.claude:dotfiles/.claude \
 	$(HOME)/.codex:dotfiles/.codex \
+	$(HOME)/.gemini:dotfiles/.gemini \
 	$(HOME)/.gogcli:dotfiles/.gogcli \
 	$(HOME)/.local/bin/osc52-yank:dotfiles/bin/osc52-yank \
 	$(HOME)/.local/bin/serve:dotfiles/bin/tailserve \
 	$(HOME)/.local/bin/dropserve:dotfiles/bin/tailserve \
 	$(HOME)/.local/bin/fwd:dotfiles/bin/fwd \
 	$(HOME)/.local/bin/killport:dotfiles/bin/killport \
-	$(HOME)/.local/bin/pcpow:dotfiles/bin/pcpow
+	$(HOME)/.local/bin/pcpow:dotfiles/bin/pcpow \
+	$(HOME)/.local/bin/member:dotfiles/bin/member
 
 # 環境変数 TAKENV_LINK_BACKUP=1 で既存ファイルを .bak に退避してリンクを張る（bootstrap.sh が使用）
 link:
@@ -47,25 +49,9 @@ link:
 		fi; \
 	done
 
-# dotfiles/.agents/skills/ 配下の各 skill を Codex 側からも見えるように per-skill symlink を張る。
-# Claude Code は dotfiles/.claude/skills が ../.agents/skills への dir symlink なので追加作業は不要。
-# Codex は skills/ 直下に .system/ という配布物があり dir 丸ごとリンクにできないので個別リンクにする。
-sync-codex-skills:
-	@codex_dir="dotfiles/.codex/skills"; \
-	mkdir -p "$$codex_dir"; \
-	for skill_dir in dotfiles/.agents/skills/*/; do \
-		[ -d "$$skill_dir" ] || continue; \
-		name=$$(basename "$$skill_dir"); \
-		dst="$$codex_dir/$$name"; \
-		target="../../.agents/skills/$$name"; \
-		if [ -L "$$dst" ] && [ "$$(readlink "$$dst")" = "$$target" ]; then \
-			echo "✓ $$dst はリンク済みです"; \
-		elif [ -e "$$dst" ] || [ -L "$$dst" ]; then \
-			echo "⚠️  $$dst に別物があります。手動で確認してください"; \
-		else \
-			ln -s "$$target" "$$dst" && echo "✓ $$dst を作成しました"; \
-		fi; \
-	done
+# 共通指示・skill・リンク・設定の静的検証
+check-agent-config:
+	@python3 scripts/check-agent-config.py
 
 # シンボリックリンクのみ削除する（実ファイルには触れない）
 unlink:
@@ -162,7 +148,7 @@ help:
 	@echo "  make link    - dotfiles のシンボリックリンクを作成"
 	@echo "  make unlink  - dotfiles のシンボリックリンクを削除（リンクのみ・実ファイルは残る）"
 	@echo "  make doctor  - 環境の健全性チェック"
-	@echo "  make sync-codex-skills - dotfiles/.agents/skills/ の新規 skill を Codex 側からも見えるようにリンクする"
+	@echo "  make check-agent-config - 共通指示・skill・リンク・設定を検証する"
 	@echo "  make tailscale-up - Tailscale に参加（Linux は --ssh 付きで SSH 受付も有効化）"
 	@echo ""
 	@echo "オプション（マシン依存で bootstrap から切り出したもの）:"

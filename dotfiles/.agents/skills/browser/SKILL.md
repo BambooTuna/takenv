@@ -1,4 +1,5 @@
 ---
+name: browser
 description: ヘッドレスブラウザ (Playwright + chromium) を使って Web ページを操作する。フルページスクショ、DOM/テキスト抽出、クリック・フォーム入力・多段フロー、レンダリング後のHTML解析、PDF化まで全般。撮った画像は Read でそのまま解析できる。
 allowed-tools: Bash(playwright:*), Bash(mise:*), Bash(node:*), Bash(mkdir:*), Bash(cat:*), Read, Write
 ---
@@ -18,7 +19,7 @@ allowed-tools: Bash(playwright:*), Bash(mise:*), Bash(node:*), Bash(mkdir:*), Ba
 - `mise` で `npm:playwright` が入っている (`~/takenv/dotfiles/.config/mise/config.toml`)
 - chromium 本体は `~/.cache/ms-playwright/` に導入済み (bootstrap.sh の `setup_headless_browser`)
 - 対話スクリプト用の scratch: `~/.cache/browser-scratch/` (`node_modules/playwright` が symlink 済みなので `import { chromium } from 'playwright'` が通る)
-- 未セットアップの環境なら `~/takenv/bootstrap.sh` を実行するのが正 (apt依存・fonts-noto-cjk・chromium ダウンロード等が入る)
+- 未セットアップなら利用可能なPlaywrightとブラウザを確認し、不足分だけ導入する。環境全体のbootstrapは環境セットアップを依頼された場合に使う。
 
 ## 実行モード
 
@@ -66,7 +67,7 @@ const ctx = await browser.newContext({
 const page = await ctx.newPage();
 
 try {
-  await page.goto('https://example.com/', { waitUntil: 'networkidle', timeout: 60_000 });
+  await page.goto('https://example.com/', { waitUntil: 'domcontentloaded', timeout: 60_000 });
 
   // ここで操作する (下のパターン参照)
 
@@ -93,7 +94,7 @@ const jsonld = await page.locator('script[type="application/ld+json"]').allTextC
 **クリック → ページ遷移**:
 ```javascript
 await page.getByRole('link', { name: '料金' }).click();
-await page.waitForLoadState('networkidle');
+await page.waitForURL(/pricing/); // 遷移先URLや必要な要素を待つ
 ```
 
 **フォーム入力・送信**:
@@ -141,8 +142,8 @@ console.log(JSON.stringify({ title, items, screenshotPath: 'out.png' }));
 ## トラブルシュート
 
 - `Cannot find package 'playwright'` → scratch dir 以外で ESM 実行している。`cd ~/.cache/browser-scratch/` してから叩くか、そこに script を置く
-- `Executable doesn't exist at ...` → `mise x -- playwright install chromium` を叩く (or `bootstrap.sh`)
-- 依存ライブラリ不足で起動できない (WSL初回等) → `~/takenv/bootstrap.sh` (libnss3 群 + fonts-noto-cjk を含む)
-- 日本語が豆腐 → 同上 (`fonts-noto-cjk` 未導入)
-- SPA でコンテンツが取れない → `waitUntil: 'networkidle'` + `--wait-for-selector` 併用、それでも駄目なら `page.waitForTimeout(1500)` を挟む
+- `Executable doesn't exist at ...` → 使用中のPlaywrightに対応するchromiumを導入する（例: `mise x -- playwright install chromium`）
+- 依存ライブラリ不足 → 起動エラーに示された不足依存を確認し、必要なパッケージだけ導入する
+- 日本語が豆腐 → CJKフォントの有無を確認し、不足なら`fonts-noto-cjk`等を導入する
+- SPAでコンテンツが取れない → 取得対象のlocatorやアプリ固有の準備状態を待つ。通信が続くページでnetworkidleを完了条件にしない
 - 403/Bot detected → `--user-agent` (CLI) or `newContext({ userAgent: '...' })`、それでも駄目なら `chromium.launch({ channel: 'chrome' })` で本物のChromeを使う

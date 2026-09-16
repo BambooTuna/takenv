@@ -1,6 +1,6 @@
 # Animation Audit Playbook
 
-The eight audit categories, what to look for in each, and the exact target values to cite in findings and plans. Distilled from Emil Kowalski's design engineering philosophy ([emilkowal.ski](https://emilkowal.ski/)). Never approximate a value that appears here — copy it.
+Starting values and review criteria from Emil Kowalski’s motion philosophy. Prefer suitable repository tokens and judge changes by their effect on the interaction.
 
 ## 1. Purpose & frequency
 
@@ -8,12 +8,12 @@ Every animation must answer "why does this animate?" — spatial consistency, st
 
 | Frequency | Decision |
 | --- | --- |
-| 100+ times/day (keyboard shortcuts, command palette toggle) | No animation. Ever. |
+| 100+ times/day (keyboard shortcuts, command palette toggle) | Prefer immediate feedback; retain only useful motion |
 | Tens of times/day (hover effects, list navigation) | Remove or drastically reduce |
 | Occasional (modals, drawers, toasts) | Standard animation |
 | Rare / first-time (onboarding, feedback, celebrations) | Can add delight |
 
-Hunt for: animations on keyboard-initiated actions, command palettes with open/close transitions (Raycast has none — correct), decorative motion on list items or hover states hit constantly. The strongest fix is often **delete the animation**.
+Hunt for: motion that delays repeated actions or distracts during frequent use. Removing unnecessary motion is often the strongest fix.
 
 ## 2. Easing & duration
 
@@ -25,7 +25,7 @@ Decision order for easing:
 - Constant motion (marquee, progress) → **`linear`**
 - Default → **`ease-out`**
 
-**`ease-in` on UI is always a finding** — it starts slow, delaying the exact moment the user is watching. Built-in CSS easings are too weak for deliberate motion; plans should introduce strong custom curves (as tokens, matching repo conventions):
+Ease-out is a useful default for direct feedback. Flag a slow start when it delays the interaction; acceleration can be appropriate for other motion.
 
 ```css
 --ease-out: cubic-bezier(0.23, 1, 0.32, 1);        /* strong ease-out for UI */
@@ -70,11 +70,11 @@ Hunt for: `@keyframes` on toasts/toggles/rapidly-triggered UI, gesture handlers 
 
 ## 5. Performance
 
-- **Animate `transform` and `opacity` only.** `width`/`height`/`margin`/`padding`/`top`/`left` trigger layout + paint + composite.
-- **`transition: all`** animates unintended properties off-GPU — always a finding.
-- **Framer Motion `x`/`y`/`scale` shorthands are not hardware-accelerated** — they run on the main thread and drop frames under load. Target: the full transform string, `animate={{ transform: "translateX(100px)" }}`.
+- **Prefer transform/opacity.** Height or clip-path can be appropriate for bounded components. Assess layout/paint cost and representative load before reporting a performance defect.
+- **`transition: all`** can animate unintended properties. Prefer explicit properties and check what actually changes.
+- **Profile the actual execution path.** Library shorthands may use different paths by version and browser; verify a performance issue before replacing them.
 - **Don't drive child transforms via a CSS variable on the parent** — it recalcs styles for all children. Set `transform` directly on the element.
-- CSS (and WAAPI) beat rAF-based JS under load — use CSS for predetermined motion, JS/springs for dynamic and gesture-driven motion.
+- CSS/WAAPI can suit predetermined motion; transitions/springs can suit retargetable or gesture-driven motion. Verify smoothness under representative load.
 - Keep transition-time `filter: blur()` under 20px — heavy blur is expensive, especially in Safari.
 
 Hunt for: `transition: all`, animated layout properties, Framer Motion shorthand props on busy pages, `setProperty('--x', …)` driving child transforms, rAF loops doing what CSS could.
@@ -90,7 +90,7 @@ Hunt for: `transition: all`, animated layout properties, Framer Motion shorthand
 }
 ```
 
-Reduced motion means fewer and gentler animations, **not zero** — keep transitions that aid comprehension, remove position changes. In JS: `useReducedMotion()` and branch transform values.
+Honor reduced-motion preferences with instant updates or gentle feedback as appropriate; retaining animation is not required.
 
 Hunt for: movement with no `prefers-reduced-motion` handling, ungated `:hover` motion, reduced-motion implementations that nuke all feedback.
 

@@ -1,17 +1,17 @@
 # Animation Standards Reference
 
-The precise values, curves, and rules behind the review. Cite these in findings instead of approximating. Distilled from Emil Kowalski's design engineering philosophy.
+Starting values and review criteria from Emil Kowalski’s motion philosophy. Prefer suitable repository tokens and judge changes by their effect on the interaction.
 
 ## Should it animate? (frequency table)
 
 | Frequency | Decision |
 | --- | --- |
-| 100+ times/day (keyboard shortcuts, command palette toggle) | No animation. Ever. |
+| 100+ times/day (keyboard shortcuts, command palette toggle) | Prefer immediate feedback; retain only useful motion |
 | Tens of times/day (hover effects, list navigation) | Remove or drastically reduce |
 | Occasional (modals, drawers, toasts) | Standard animation |
 | Rare / first-time (onboarding, feedback, celebrations) | Can add delight |
 
-**Never animate keyboard-initiated actions** — they repeat hundreds of times daily; animation makes them feel slow and disconnected. (Raycast has no open/close animation — correct for something used hundreds of times a day.)
+Frequent keyboard actions need immediate feedback. Evaluate actual frequency and delay, not input method alone.
 
 Valid purposes for motion: spatial consistency, state indication, explanation, feedback, preventing jarring change. "It looks cool" on a frequently-seen element is not valid.
 
@@ -24,7 +24,7 @@ Decision order:
 - Constant motion (marquee, progress) → **`linear`**
 - Default → **`ease-out`**
 
-**Never `ease-in` on UI.** It starts slow, delaying the exact moment the user is watching. `ease-out` at 200ms *feels* faster than `ease-in` at 200ms.
+Ease-out is a useful default for direct feedback. Flag a slow start when it delays the interaction; acceleration can be appropriate for other motion.
 
 Built-in CSS easings are too weak. Use strong custom curves:
 
@@ -109,23 +109,14 @@ Slow where the user is deciding, fast where the system responds.
 
 ## Performance
 
-- **Only animate `transform` and `opacity`** — they skip layout/paint and run on the GPU. `padding`/`margin`/`height`/`width`/`top`/`left` trigger all three rendering steps.
+- **Prefer transform/opacity.** Height or clip-path can be appropriate for bounded components. Assess layout/paint cost and representative load before reporting a performance defect.
 - **Don't drive child transforms via a CSS variable on the parent** — it recalcs styles for all children. Set `transform` directly on the element.
   ```js
   element.style.setProperty('--swipe-amount', `${d}px`); // bad: recalc on all children
   element.style.transform = `translateY(${d}px)`;        // good: only this element
   ```
-- **Framer Motion shorthands are NOT hardware-accelerated.** `x`/`y`/`scale` run on the main thread via rAF and drop frames under load. Use the full transform string:
-  ```jsx
-  <motion.div animate={{ x: 100 }} />                          // drops frames under load
-  <motion.div animate={{ transform: "translateX(100px)" }} />  // hardware accelerated
-  ```
-- **CSS animations beat JS under load** — they run off the main thread; rAF-based animations stutter while the browser loads/scripts/paints. Use CSS for predetermined motion, JS for dynamic/interruptible.
-- **WAAPI** gives JS control with CSS performance (hardware-accelerated, interruptible, no library):
-  ```js
-  element.animate([{ clipPath: 'inset(0 0 100% 0)' }, { clipPath: 'inset(0 0 0 0)' }],
-    { duration: 1000, fill: 'forwards', easing: 'cubic-bezier(0.77, 0, 0.175, 1)' });
-  ```
+- **Check the actual execution path.** Acceleration depends on library version, browser, properties, and animation type. Profile before replacing shorthands or moving between CSS, WAAPI, and JS.
+- Use CSS/WAAPI for suitable predetermined motion and transitions/springs for retargetable interactions. API choice alone does not guarantee smooth rendering.
 
 ## Transforms & clip-path
 
@@ -173,7 +164,7 @@ const reduce = useReducedMotion();
 const closedX = reduce ? 0 : '-100%';
 ```
 
-Reduced motion means fewer and gentler animations, not zero — keep transitions that aid comprehension, remove movement/position changes.
+Honor reduced-motion preferences with instant updates or gentle feedback as appropriate; retaining animation is not required.
 
 ## Debugging (recommend in reviews when feel is uncertain)
 
