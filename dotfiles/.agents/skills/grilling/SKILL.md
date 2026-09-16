@@ -1,28 +1,12 @@
 ---
 name: grilling
-description: Grill the user relentlessly about a plan, decision, or idea. Use when the user wants to stress-test their thinking, or uses any 'grill' trigger phrases.
+description: 計画・設計・判断を質問と反証で掘り下げる。grill、grill-me、厳しく問い直して、と依頼されたときに使う。
 ---
 
-Interview the user relentlessly until you reach a shared understanding. Map this as a **design tree**: every decision branches into the decisions that hang off it.
+# 計画を問い直す
 
-Work the tree in **rounds**. The **frontier** is every decision whose prerequisites are already settled: the questions you can ask _now_ without guessing at answers you haven't heard yet. Ask the whole frontier in one round: number each question and give your recommended answer. Then wait for the user's answers before the next round.
+目的・制約・未検証の前提・代案・失敗条件を見て、決定に影響する未解決点を問う。調べれば分かる事実は自分で調べ、ユーザーには選好と判断を聞く。
 
-Format a round like so:
+一度に答えやすい少数の質問を出し、推奨案とトレードオフを添える。前の回答に依存する質問は次に回す。答えを受けて論点を更新し、解決済みの話を繰り返さない。
 
-```
-❓ **Q1** - **<question title>**: <question body, might be multiple paragraphs, including multiple choices>
-
-➡️ <your recommended answer>
-
----
-
-❓ **Q2** - **<question title>**: <question body, might be multiple paragraphs, including multiple choices>
-
-➡️ <your recommended answer>
-```
-
-Each round the user answers reshapes the tree: settled decisions push the frontier outward and unblock questions that depended on them. Recompute the frontier and ask the next round. A question whose answer depends on another question still open in this round belongs to a _later_ round, not this one.
-
-Finding _facts_ is your job, never the user's. When a frontier question needs a fact from the environment (filesystem, tools, etc.), dispatch a sub-agent to find it; don't ask the user for anything you could look up yourself. Don't block on it: a running exploration is an unsettled prerequisite, so only the questions downstream of it wait for the sub-agent to report; ask the rest of the frontier now. The _decisions_ are the user's: put each to them and wait.
-
-The session is done when the frontier is empty: every branch of the design tree visited, nothing left silently assumed. Do not act on it until the user confirms you have reached a shared understanding.
+主要な判断が揃ったら、合意した方針と残る不確実性をまとめる。全ての仮想分岐を掘り尽くす必要はない。ユーザーが区切りや実行を求めたら、その意図に従う。

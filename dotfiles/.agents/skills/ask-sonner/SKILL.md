@@ -11,7 +11,7 @@ A guide skill for [Sonner](https://sonner.emilkowal.ski), the toast library. Whe
 
 Two pieces, and only two:
 
-1. **One `<Toaster />`, mounted once**, as close to the root as possible (in Next.js: `layout.tsx` — it works inside server components). Never render it per-page or conditionally; a second mounted Toaster duplicates every toast.
+1. **Usually one `<Toaster />` near the root**, mounted for the lifetime of the relevant UI. For separate toast surfaces, give each Toaster an `id` and target calls with `toasterId` (see Multiple toasters).
 2. **`toast()` called from client code** — event handlers, effects, callbacks. It's a plain function, no hook or provider needed, but it does nothing on the server: in a server action, return the result and call `toast()` in the client code that receives it.
 
 ```jsx
@@ -50,11 +50,11 @@ toast.success('Uploaded', { id });
 
 ## Styling — the escalation ladder
 
-Climb only as far as the change requires; jumping to the top rung too early is fine (it's the recommended end state), lingering in the middle is not.
+Use the smallest styling change that fits the design. Choose headless when custom markup or substantial styling warrants it.
 
 1. **Defaults** — plus `richColors` on the Toaster for colorful success/error, `invert` to flip against the theme.
 2. **Inline tweaks** — `toastOptions={{ style: {…} }}` on the Toaster for all toasts, or `style` per `toast()` call.
-3. **Classes on parts** — `toastOptions={{ classNames: { toast, title, description, actionButton, cancelButton, closeButton } }}`. Sonner's injected styles win the cascade, so every class needs `!important` (Tailwind: `!text-red-900`). If you're marking more than a few things important, stop — go headless.
+3. **Classes on parts** — `toastOptions={{ classNames: { toast, title, description, actionButton, cancelButton, closeButton } }}`. Inspect the cascade before adding `!important`; use `unstyled` or headless when default styles are the obstacle.
 4. **Headless** — `toast.custom()` with your own JSX, keeping Sonner's positioning, stacking, and swipe. The recommended approach for a design-system toast: wrap it in your own `toast()` abstraction. (`unstyled: true` exists as a halfway house, but headless gives more control for the same effort.)
 
 **Icons** — swap defaults per-type with the Toaster's `icons` prop, per-toast with `icon`, remove with `null`.
@@ -66,8 +66,8 @@ Climb only as far as the change requires; jumping to the top rung too early is f
 | Symptom | Cause → fix |
 | --- | --- |
 | Toast never appears | No `<Toaster />` mounted, or it unmounted (conditional render, per-page placement). Mount one at the root. If calling from a server action: `toast()` is client-only — call it with the action's result on the client. |
-| Same toast appears twice | Two Toasters mounted (layout **and** page) — keep one. Or `toast()` fired in an effect under React StrictMode's dev double-invoke — fire from the event handler instead, or pass a stable `id` so the second call updates rather than duplicates. |
-| Tailwind/CSS classes have no effect | Default styles override them. Mark them `!important`, or use `unstyled` / headless (see the ladder above). |
+| Same toast appears twice | Check for untargeted multiple Toasters, or `toast()` called twice (including effects in StrictMode). Use `toasterId` for intentional separate surfaces and a stable toast `id` for updates. |
+| Tailwind/CSS classes have no effect | Inspect injected styles and selector precedence. Use a targeted override, `unstyled`, or headless as needed. |
 | Toasts render completely unstyled (common in Astro, view transitions) | Sonner's injected stylesheet was lost — import it explicitly in a layout: `import 'sonner/dist/styles.css'`. |
 | Unstyled inside Shadow DOM | Styles land in `document.head`, not the shadow root. Copy the style tag whose text includes `[data-sonner-toaster]` into the shadow root. |
 | Toast behind a modal/overlay, or clipped | An ancestor creates a stacking context (`transform`, `filter`, `overflow`) or the overlay out-z-indexes the toaster. Move `<Toaster />` to the document root, outside any dialog/portal container. |

@@ -18,3 +18,6 @@ tmp/
 
 # 実験・使い捨て置き場
 /scratch/
+
+# Python bytecode キャッシュ
+__pycache__/
