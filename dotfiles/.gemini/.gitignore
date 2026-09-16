@@ -1,0 +1,11 @@
+# gemini-cli が実行時に書き出すもの（丸ごとリンクしているため .gitignore で除外する）
+history
+tmp
+installation_id
+projects.json
+projects.json.*.tmp
+state.json
+trustedFolders.json
+oauth_creds.json
+google_accounts.json
+user_id
