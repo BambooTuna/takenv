@@ -36,8 +36,10 @@ services:
       - ${HOME}:${HOME}:ro
       # upload/create 専用の rw 領域 (~/.tmuxui/uploads/YYYY-MM-DD/ に保存される)
       - ${HOME}/.tmuxui:${HOME}/.tmuxui
-      # herdr socket も明示(念のため)
-      - ${HOME}/.config/herdr/herdr.sock:${HOME}/.config/herdr/herdr.sock
+      # herdr socket。sock ファイル単体の bind は (1) 不在時に dockerd が同名ディレクトリを
+      # 自動作成して herdr の起動を壊す (2) herdr 再起動で sock の inode が変わり
+      # コンテナが古い sock を掴み続ける、の二重に壊れるためディレクトリごとマウントする。
+      - ${HOME}/.config/herdr:${HOME}/.config/herdr
 
   # Immich: self-hosted 写真管理 (Google フォト代替)。スマホからは Tailscale 経由で
   # http://desktop:2283 に接続する。写真原本と DB は ~/immich-data (WSL2 ext4 側) に置く。
