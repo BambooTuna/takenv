@@ -26,6 +26,9 @@
 !/.gogcli/
 !/.gogcli/**
 
+!/.gemini/
+!/.gemini/**
+
 !/.ssh/
 !/.ssh/config
 
