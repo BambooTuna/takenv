@@ -46,7 +46,7 @@ Is the element entering or exiting?
       Yes → linear
     Default → ease-out
 
-**Critical: use custom easing curves.** The built-in CSS easings are too weak. They lack the punch that makes animations feel intentional.
+**Use custom easing curves.** The built-in CSS easings are too weak. They lack the punch that makes animations feel intentional.
 
 ```css
 /* Strong ease-out for UI interactions */

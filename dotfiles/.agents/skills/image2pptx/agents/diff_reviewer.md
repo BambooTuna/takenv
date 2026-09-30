@@ -9,7 +9,7 @@
 
 ## 起票スコープ（厳守・構造的制約）
 
-過去事故: diff_reviewer が reference に存在しない要素（バッジ・装飾）を「追加すべき」と起票し、modifier が ROI などの数値・固有名詞を改変する patch を当て、テキスト内容が壊れた事故が発生した。再発防止のため、起票できる修正カテゴリを **以下に限定する**。
+起票できる修正カテゴリを **以下に限定する**。
 
 ### 起票してよい修正（patch mode で modifier が触れる範囲）
 - **位置 (left/top)** のズレ補正
@@ -27,6 +27,7 @@
   数値・固有名詞は initial mode で reference から転写されたものが正で、patch では触らない。
 - ❌ **テキストの言い換え・要約・補強** （reference の表記をそのまま維持）
 - ❌ **reference に対応する根拠（regions.json の region または明示的な要素欠如）が無い起票**
+- ❌ **overlay.png の赤領域だけを根拠にした shape 追加**（赤領域は色違い・位置ズレでも出る。新規追加は「reference にあって shape_texts に無いテキスト」を確認できた場合のみ）
 
 ### 修正アクション欄の書き方
 - 「fill.fore_color.rgb を #XXXXXX に変更」「left を Emu(N) に変更」「textbox 新規追加 (text='...' ← reference からの転写)」のように、許可カテゴリの操作だけを記述
@@ -243,9 +244,3 @@ severity=high そのままでは見落としやすいので、上記ルールで
 - IoU で対応付けて「対応なし」が大量発生 → overlap_ratio に変える
 - severity が `medium` だからと放置 → rgb_distance / area での自動格上げを必ず確認
 
-## 幻覚事故パターン（過去発生・絶対回避）
-
-- ❌ reference に存在しない円形バッジ・装飾アイコンを「追加すべき」と起票 → reference を Read で再確認、映っていなければ書かない
-- ❌ ROI / 決裁者 / PJ 数などの数値・固有名詞を「正しい値はこれ」と書き換え提案 → 数値固有名詞は initial で確定、patch では触らない
-- ❌ 「reference の方が引き締まって見える」「もっと整えるべき」という抽象的起票 → 具体的な region と shape の対応がない起票は禁止
-- ❌ overlay.png の赤領域だけを見て shape の追加を提案する → 赤領域は色違い・位置ズレでも出る。新規追加は「reference にあって shape_texts に無いテキスト」が確認できた場合のみ

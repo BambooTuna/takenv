@@ -9,8 +9,7 @@ Discover and install skills from the open agent skills ecosystem via the Skills 
 
 ## When to Use
 
-- "how do I do X" / "find a skill for X" / "is there a skill for X" / "can you do X"
-- User wants to extend agent capabilities with a specialized tool, template, or workflow
+- User asks whether a capability exists, or wants to extend agent capabilities with a specialized tool, template, or workflow
 
 ## Skills CLI Commands
 
@@ -23,7 +22,7 @@ Discover and install skills from the open agent skills ecosystem via the Skills 
 
 ## Search Flow
 
-1. Check the [skills.sh leaderboard](https://skills.sh/) first — it ranks by total installs. Top examples for web dev: `vercel-labs/agent-skills` (React/Next.js/web design, 100K+ installs), `anthropics/skills` (frontend design, document processing, 100K+ installs).
+1. Check the [skills.sh leaderboard](https://skills.sh/) first — it ranks by total installs. Top examples for web dev: `vercel-labs/agent-skills` (React/Next.js/web design), `anthropics/skills` (frontend design, document processing). Check current install counts on skills.sh.
 2. If the leaderboard doesn't cover the need, run `npx skills find [query] [--owner <owner>]`. Use specific keywords ("react performance" beats "testing" alone); try alternative terms if the first search misses (e.g. "deploy" → "deployment" or "ci-cd").
 3. Other popular sources worth checking: `vercel-labs/agent-skills`, `ComposioHQ/awesome-claude-skills`.
 
@@ -44,7 +43,6 @@ Example:
 ```
 I found a skill that might help! The "react-best-practices" skill provides
 React and Next.js performance optimization guidelines from Vercel Engineering.
-(185K installs)
 
 To install it:
 npx skills add vercel-labs/agent-skills@react-best-practices

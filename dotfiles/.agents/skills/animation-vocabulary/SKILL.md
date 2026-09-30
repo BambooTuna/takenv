@@ -55,7 +55,7 @@ Output:
 
 ## Glossary
 
-_A curated snapshot mirroring the project's `/vocabulary` page; keep the two in sync when either changes._
+_A general-purpose glossary; if a project keeps its own vocabulary reference, keep this list consistent with it._
 
 ### Entrances & Exits — how elements appear and disappear
 - **Fade in / Fade out** — Element appears or disappears by changing opacity.
