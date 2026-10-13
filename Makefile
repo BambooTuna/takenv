@@ -35,7 +35,7 @@ link:
 	@mkdir -p ~/.config/herdr ~/.config/mise ~/.local/bin ~/.ssh
 	@chmod 700 ~/.ssh
 	@for pair in $(DOTFILES); do \
-		dst="$${pair%%:*}"; src="$(PWD)/$${pair##*:}"; \
+		dst="$${pair%%:*}"; src="$(CURDIR)/$${pair##*:}"; \
 		if [ -L "$$dst" ] && [ "$$(readlink "$$dst")" = "$$src" ]; then \
 			echo "✓ $$dst はリンク済みです"; \
 		elif [ -e "$$dst" ] || [ -L "$$dst" ]; then \
@@ -65,7 +65,7 @@ doctor:
 	@status=0; \
 	echo "== dotfiles リンク =="; \
 	for pair in $(DOTFILES); do \
-		dst="$${pair%%:*}"; src="$(PWD)/$${pair##*:}"; \
+		dst="$${pair%%:*}"; src="$(CURDIR)/$${pair##*:}"; \
 		if [ -L "$$dst" ] && [ "$$(readlink "$$dst")" = "$$src" ]; then \
 			echo "  ✓ $$dst"; \
 		else \
