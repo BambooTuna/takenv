@@ -26,6 +26,9 @@ services:
     restart: unless-stopped
     network_mode: host
     user: "${TMUXUI_UID:-1000}:${TMUXUI_GID:-1000}"
+    # --herdr auto は起動時に sock が無いと herdr 連携ごと無効化する。dockerd は herdr より
+    # 先に起動するため、明示パスにして接続を都度リトライさせる。
+    command: ["--host", "0.0.0.0", "--herdr", "${HOME}/.config/herdr/herdr.sock"]
     environment:
       TMUXUI_TOKEN: "${TMUXUI_TOKEN}"
       # filer が pane の CWD (host 側絶対パス) をそのまま読めるよう HOME をホストと一致させる

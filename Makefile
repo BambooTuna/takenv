@@ -129,6 +129,13 @@ btop-gpu:
 	@command -v mise >/dev/null 2>&1 && mise uninstall btop >/dev/null 2>&1 || true
 	@btop --version | head -1
 
+# tmuxui コンテナ用に /tmp/tmux-$UID を起動時に本人所有で作らせる (systemd-tmpfiles は docker より先に走る)。
+# 無いと dockerd が bind mount 元を root 所有で作り、ホストの tmux が unsafe permissions で起動できなくなる。
+tmuxui-setup:
+	@echo "d /tmp/tmux-$$(id -u) 0700 $$(id -u) $$(id -g) -" | sudo tee /etc/tmpfiles.d/tmux-$$(id -u).conf
+	@sudo systemd-tmpfiles --create /etc/tmpfiles.d/tmux-$$(id -u).conf
+	@ls -ld /tmp/tmux-$$(id -u)
+
 # 普段起動しておきたい常駐サービスを foreground で一括起動する。
 # 各サービスは背景ジョブとして走り、ログはこの端末にまとめて流れる。
 # Ctrl+C ですべて止まる。追加するサービスは scripts/up の下部に1行足す。
@@ -154,6 +161,7 @@ help:
 	@echo "オプション（マシン依存で bootstrap から切り出したもの）:"
 	@echo "  make gpu-setup - NVIDIA GPU をコンテナ／btop から使えるようにする（Container Toolkit + docker 連携 + btop GPU 表示）"
 	@echo "  make btop-gpu  - btop の GPU 対応版 (apt 版) だけを入れ直す（docker には触らない）"
+	@echo "  make tmuxui-setup - tmuxui 用の /tmp/tmux-\$$UID を起動時に本人所有で作らせる（要 sudo）"
 	@echo ""
 	@echo "常駐サービス:"
 	@echo "  make up      - 普段起動しておきたい常駐サービスを foreground で一括起動 (Ctrl+C で全停止)"
